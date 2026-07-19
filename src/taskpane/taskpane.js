@@ -53,7 +53,7 @@ async function logToSharePoint(title, meetingType) {
     auth: {
       clientId: "YOUR_ENTRA_CLIENT_ID", // Replace with your Entra ID Client ID
       authority: "https://login.microsoftonline.com/YOUR_TENANT_ID", // Replace with your Tenant ID or 'common'
-      redirectUri: "https://localhost:3000/taskpane.html",
+      redirectUri: "https://git-uvid.github.io/UVID-Teams-Meeting-Automate/taskpane.html",
     },
   };
 
