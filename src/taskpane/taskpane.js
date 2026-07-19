@@ -387,7 +387,7 @@ async function getAccessToken() {
     auth: {
       clientId: "aae90a8e-999d-4b18-ba63-f9abfb54ee68", 
       authority: "https://login.microsoftonline.com/bcbce4e4-0e70-42c4-bf70-cf41ea55f075",
-      redirectUri: "http://localhost:3000"
+      redirectUri: "https://git-uvid.github.io/UVID-Teams-Meeting-Automate/taskpane.html"
     }
   };
   const msalInstance = new msal.PublicClientApplication(msalConfig);
