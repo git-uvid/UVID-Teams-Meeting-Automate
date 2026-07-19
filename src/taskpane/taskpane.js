@@ -19,7 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("startTime")?.addEventListener("change", calculateEndTime);
   document.getElementById("duration")?.addEventListener("input", calculateEndTime);
 
-  document.getElementById("injectAndLog")?.addEventListener("click", handleInjectAndLog);
+  document.getElementById("injectEmailOnly")?.addEventListener("click", () => handleSubmission(true, false));
+  document.getElementById("logSpOnly")?.addEventListener("click", () => handleSubmission(false, true));
+  document.getElementById("injectAndLog")?.addEventListener("click", () => handleSubmission(true, true));
   
   // Initial setup
   handleTabChange();
@@ -141,7 +143,7 @@ function formatTimeText(timeStr) {
   return `${h}:${m} ${ampm}`;
 }
 
-async function handleInjectAndLog() {
+async function handleSubmission(doEmail, doSP) {
   const activeTab = document.querySelector('input[name="tabNav"]:checked').value;
   let action = "";
   
@@ -236,41 +238,62 @@ async function handleInjectAndLog() {
     emailBody = `Meeting ID: ${id}\nNew Title: ${newTitle}`;
   }
   
-  // Set Email To, Subject, and Body using Office.js
+  
   if (window.Office && window.Office.context && window.Office.context.mailbox) {
-    Office.context.mailbox.item.to.setAsync([{ emailAddress: "connect@uvidconsulting.com" }], (res) => {
-      if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-    });
     
-    Office.context.mailbox.item.subject.setAsync(action, (res) => {
-      if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-    });
-    
-    Office.context.mailbox.item.body.setSelectedDataAsync(emailBody, { coercionType: Office.CoercionType.Text }, async (asyncResult) => {
-      if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-        statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
-        statusEl.style.color = "red";
-        return;
-      }
+    if (doEmail) {
+      statusEl.innerText = "Constructing Email...";
+      statusEl.style.color = "blue";
+      Office.context.mailbox.item.to.setAsync([{ emailAddress: "connect@uvidconsulting.com" }], (res) => {
+        if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
       
-      // Log to SharePoint
-      statusEl.innerText = "Logging to SharePoint...";
-      try {
-        await logToSharePoint(action, activeTab);
-        statusEl.innerText = "Success! Email populated and logged to SharePoint.";
-        statusEl.style.color = "green";
-      } catch (err) {
-        console.error(err);
-        statusEl.innerText = "Email populated, but failed to log to SharePoint.";
-        statusEl.style.color = "orange";
-      }
-    });
+      Office.context.mailbox.item.subject.setAsync(action, (res) => {
+        if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
+      
+      Office.context.mailbox.item.body.setSelectedDataAsync(emailBody, { coercionType: Office.CoercionType.Text }, async (asyncResult) => {
+        if (asyncResult.status === Office.AsyncResultStatus.Failed) {
+          statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
+          statusEl.style.color = "red";
+          return;
+        }
+        
+        if (doSP) {
+          await executeSPLog(action, activeTab, statusEl, "Success! Email populated and logged to SharePoint.", "Email populated, but failed to log to SharePoint.");
+        } else {
+          statusEl.innerText = "Success! Email constructed.";
+          statusEl.style.color = "green";
+        }
+      });
+    } else if (doSP) {
+      await executeSPLog(action, activeTab, statusEl, "Success! Logged to SharePoint.", "Failed to log to SharePoint.");
+    }
   } else {
     // If testing in browser without Office.js
     console.log("Subject:", action);
     console.log("Body:", emailBody);
-    statusEl.innerText = "Testing outside Outlook. Check console for output.";
-    statusEl.style.color = "orange";
+    
+    if (doSP) {
+      await executeSPLog(action, activeTab, statusEl, "Testing outside Outlook. Logged to SharePoint.", "Testing outside Outlook. SP Log failed.");
+    } else {
+      statusEl.innerText = "Testing outside Outlook. Email generated in console.";
+      statusEl.style.color = "orange";
+    }
+  }
+}
+
+async function executeSPLog(action, activeTab, statusEl, successMsg, failMsg) {
+  statusEl.innerText = "Logging to SharePoint...";
+  statusEl.style.color = "blue";
+  try {
+    await logToSharePoint(action, activeTab);
+    statusEl.innerText = successMsg;
+    statusEl.style.color = "green";
+  } catch (err) {
+    console.error(err);
+    statusEl.innerText = failMsg;
+    statusEl.style.color = "red";
   }
 }
 
