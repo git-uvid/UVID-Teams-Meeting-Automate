@@ -3,10 +3,20 @@
  */
 
 let isMeetingFound = false;
-let userEmail = "TestUser@uvidconsulting.com";
+let userEmail = "";
 
-// Setup event listeners immediately so it works in local browser testing too
-document.addEventListener("DOMContentLoaded", () => {
+Office.onReady((info) => {
+  if (window.Office && window.Office.context && window.Office.context.mailbox && window.Office.context.mailbox.userProfile) {
+    userEmail = window.Office.context.mailbox.userProfile.emailAddress;
+  } else {
+    userEmail = "TestUser@uvidconsulting.com";
+  }
+  
+  const genBy = document.getElementById("generatedBy");
+  if (genBy) {
+    genBy.value = userEmail;
+  }
+
   // Listeners for Tab Navigation
   const tabs = document.querySelectorAll('input[name="tabNav"]');
   tabs.forEach(tab => {
@@ -25,18 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Initial setup
   handleTabChange();
-});
-
-Office.onReady((info) => {
-  if (info.host === Office.HostType.Mail) {
-    if (Office.context.mailbox && Office.context.mailbox.userProfile) {
-      userEmail = Office.context.mailbox.userProfile.emailAddress;
-    }
-  }
-  const genBy = document.getElementById("generatedBy");
-  if (genBy) {
-    genBy.value = userEmail;
-  }
 });
 
 function calculateEndTime() {
@@ -163,7 +161,7 @@ async function handleSubmission(doEmail, doSP) {
   if (action === "Schedule Meeting") {
     const title = document.getElementById("meetingTitle").value;
     const subject = document.getElementById("meetingSubject").value;
-    const bodyMsg = document.getElementById("meetingEventMessage").value;
+    const bodyMsg = document.getElementById("meetingEventMessage").value.replace(/\n/g, "<br>");
     const date = formatDateText(document.getElementById("startDate").value);
     const time = formatTimeText(document.getElementById("startTime").value);
     const endTime = formatTimeText(document.getElementById("endTime").value);
@@ -173,12 +171,12 @@ async function handleSubmission(doEmail, doSP) {
     const type = document.getElementById("meetingType").value;
     const timezone = document.getElementById("timezone").value;
     
-    emailBody = `Title: ${title}\nSubject: ${subject}\nMessage: ${bodyMsg}\nDate: ${date}\nStart Time: ${time}\nEnd Time: ${endTime}\nDuration: ${duration}\nRequired Attendees: ${reqAttendees}\nOptional Attendees: ${optAttendees}\nType: ${type}\nTimezone: ${timezone}`;
+    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Timezone: ${timezone}`;
   }
   else if (action === "Schedule Recurring Meeting") {
     const title = document.getElementById("meetingTitle").value;
     const subject = document.getElementById("meetingSubject").value;
-    const bodyMsg = document.getElementById("meetingEventMessage").value;
+    const bodyMsg = document.getElementById("meetingEventMessage").value.replace(/\n/g, "<br>");
     const date = formatDateText(document.getElementById("startDate").value);
     const time = formatTimeText(document.getElementById("startTime").value);
     const endTime = formatTimeText(document.getElementById("endTime").value);
@@ -191,7 +189,7 @@ async function handleSubmission(doEmail, doSP) {
     const interval = document.getElementById("recurrenceInterval").value;
     const endDate = formatDateText(document.getElementById("seriesEndDate").value);
     
-    emailBody = `Title: ${title}\nSubject: ${subject}\nMessage: ${bodyMsg}\nDate: ${date}\nStart Time: ${time}\nEnd Time: ${endTime}\nTimezone: ${timezone}\nDuration: ${duration}\nRequired Attendees: ${reqAttendees}\nOptional Attendees: ${optAttendees}\nType: ${type}\nFrequency: ${freq}\nInterval: ${interval}\nEnd date: ${endDate}`;
+    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Interval: ${interval}<br>End date: ${endDate}`;
   }
   else if (action === "Reschedule Meeting") {
     const id = document.getElementById("meetingId").value;
@@ -200,7 +198,7 @@ async function handleSubmission(doEmail, doSP) {
     const timezone = document.getElementById("timezoneEdit").value;
     const reason = document.getElementById("reason").value;
     
-    emailBody = `Meeting ID: ${id}\nNew Date: ${date}\nNew Time: ${time}\nTimezone: ${timezone}\nReason: ${reason}`;
+    emailBody = `Meeting ID: ${id}<br>New Date: ${date}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
   }
   else if (action === "Reschedule Series") {
     const id = document.getElementById("meetingId").value;
@@ -209,33 +207,33 @@ async function handleSubmission(doEmail, doSP) {
     const timezone = document.getElementById("timezoneEdit").value;
     const reason = document.getElementById("reason").value;
     
-    emailBody = `Series ID: ${id}\nNew Day: ${day}\nNew Time: ${time}\nTimezone: ${timezone}\nReason: ${reason}`;
+    emailBody = `Series ID: ${id}<br>New Day: ${day}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
   }
   else if (action === "Cancel Meeting") {
     const id = document.getElementById("meetingId").value;
     const reason = document.getElementById("reason").value;
     
-    emailBody = `Meeting ID: ${id}\nReason: ${reason}`;
+    emailBody = `Meeting ID: ${id}<br>Reason: ${reason}`;
   }
   else if (action === "Cancel Series") {
     const id = document.getElementById("meetingId").value;
     const reason = document.getElementById("reason").value;
     
-    emailBody = `Series ID: ${id}\nReason: ${reason}`;
+    emailBody = `Series ID: ${id}<br>Reason: ${reason}`;
   }
   else if (action === "Add Participant") {
     const id = document.getElementById("meetingId").value;
     const newParticipant = document.getElementById("newParticipantEmail").value;
     const name = document.getElementById("newParticipantName").value;
     
-    emailBody = `Meeting ID: ${id}\nNew Participant: ${newParticipant}`;
-    if (name) emailBody += `\nName: ${name}`;
+    emailBody = `Meeting ID: ${id}<br>New Participant: ${newParticipant}`;
+    if (name) emailBody += `<br>Name: ${name}`;
   }
   else if (action === "Update Meeting") {
     const id = document.getElementById("meetingId").value;
     const newTitle = document.getElementById("newTitle").value;
     
-    emailBody = `Meeting ID: ${id}\nNew Title: ${newTitle}`;
+    emailBody = `Meeting ID: ${id}<br>New Title: ${newTitle}`;
   }
   
   
@@ -244,7 +242,15 @@ async function handleSubmission(doEmail, doSP) {
     if (doEmail) {
       statusEl.innerText = "Constructing Email...";
       statusEl.style.color = "blue";
+      
+      // Clear To, CC, BCC
       Office.context.mailbox.item.to.setAsync([{ emailAddress: "connect@uvidconsulting.com" }], (res) => {
+        if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
+      Office.context.mailbox.item.cc.setAsync([], (res) => {
+        if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
+      Office.context.mailbox.item.bcc.setAsync([], (res) => {
         if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
       });
       
@@ -252,7 +258,12 @@ async function handleSubmission(doEmail, doSP) {
         if(res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
       });
       
-      Office.context.mailbox.item.body.setSelectedDataAsync(emailBody, { coercionType: Office.CoercionType.Text }, async (asyncResult) => {
+      // Append Regards and Disclaimer
+      const name = userEmail ? userEmail.split('@')[0].replace('.', ' ') : 'User';
+      const capitalizedName = name.replace(/\b\w/g, l => l.toUpperCase());
+      const finalEmailBody = emailBody + `<br><br>Best regards,<br>${capitalizedName}<br><br><i>[Auto-generated email by UVID Teams Meeting Automate]</i>`;
+      
+      Office.context.mailbox.item.body.setAsync(finalEmailBody, { coercionType: Office.CoercionType.Html }, async (asyncResult) => {
         if (asyncResult.status === Office.AsyncResultStatus.Failed) {
           statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
           statusEl.style.color = "red";
@@ -340,7 +351,7 @@ async function logToSharePoint(action, activeTab) {
         Recurrenceinterval: isRecurring ? (parseInt(document.getElementById("recurrenceInterval")?.value) || 1) : 0,
         Starttime: startIso || null,
         Endtime: endIso || null,
-        GeneratedBy: document.getElementById("generatedBy")?.value || "Unknown",
+        TriggeredBy: document.getElementById("generatedBy")?.value || "Unknown",
         Status: "Requested" // Initial SP status is requested, flow changes it
       }
     };
