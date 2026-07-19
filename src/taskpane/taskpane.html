@@ -59,28 +59,19 @@
     <main id="app-body">
       <h2>UVID Teams Meeting Automate</h2>
       
-      <details>
-        <summary>View Email Reference Formatting ℹ️</summary>
-        <div class="details-content">
-          <strong>Email format — how leads send scheduling requests</strong>
-          <p style="margin: 5px 0;">All flows are triggered by email to <strong>connect@uvidconsulting.com</strong>. The subject line determines which flow fires. The body provides the meeting details. Every field must be on its own line exactly as shown.</p>
-          <ul>
-            <li><strong>ONE-OFF MEETING:</strong> Subject: Schedule Meeting</li>
-            <li><strong>RECURRING MEETING:</strong> Subject: Schedule Recurring Meeting</li>
-            <li><strong>RESCHEDULE ONE OCCURRENCE:</strong> Subject: Reschedule Meeting</li>
-            <li><strong>RESCHEDULE FULL SERIES:</strong> Subject: Reschedule Series</li>
-            <li><strong>CANCEL ONE OCCURRENCE:</strong> Subject: Cancel Meeting</li>
-            <li><strong>CANCEL FULL SERIES:</strong> Subject: Cancel Series</li>
-            <li><strong>ADD PARTICIPANT:</strong> Subject: Add Participant</li>
-            <li><strong>CHANGE MEETING TITLE:</strong> Subject: Update Meeting</li>
-          </ul>
-        </div>
-      </details>
-
-      <div class="nav-tabs">
-        <label><input type="radio" name="tabNav" value="newMeeting" checked> New Meeting</label>
-        <label><input type="radio" name="tabNav" value="editMeeting"> Edit Meeting</label>
+      <div class="nav-tabs" style="display: flex; background: #f3f2f1; border-radius: 4px; padding: 4px; margin-bottom: 20px;">
+        <label class="tab-label" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 4px; font-weight: 600;">
+          <input type="radio" name="tabNav" value="newMeeting" checked style="display:none;"> New Meeting
+        </label>
+        <label class="tab-label" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 4px; font-weight: 600;">
+          <input type="radio" name="tabNav" value="editMeeting" style="display:none;"> Edit Meeting
+        </label>
       </div>
+      
+      <style>
+        .tab-label { transition: background 0.2s, color 0.2s; color: #1D1D1D; }
+        .tab-label:has(input:checked) { background: #315EFF; color: #ffffff; }
+      </style>
 
       <div class="ms-TextField">
         
@@ -89,6 +80,15 @@
              ============================================== -->
         <div id="newMeetingContainer">
           
+          <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315EFF; border-left: 4px solid #315EFF;">
+            <label for="flowActionNew">Flow Action (Select what you want to do)</label>
+            <select id="flowActionNew">
+              <option value="Schedule Meeting">Schedule Meeting (One-off)</option>
+              <option value="Schedule Recurring Meeting">Schedule Recurring Meeting</option>
+            </select>
+            <span class="help-text">This automatically sets the email subject to trigger Power Automate.</span>
+          </div>
+
           <div class="form-group">
             <label for="meetingTitle">Meeting Title</label>
             <input type="text" id="meetingTitle" />
@@ -179,11 +179,6 @@
             </select>
           </div>
           
-          <div class="form-group checkbox-group">
-            <input type="checkbox" id="isRecurring" />
-            <label for="isRecurring">This is a recurring meeting</label>
-          </div>
-
           <!-- RECURRING FIELDS -->
           <div id="recurringFields" style="display: none; padding: 10px; border-left: 4px solid #315EFF; margin-left: 5px; background: #DCE0FF; border-radius: 4px;">
             <div class="form-group">
