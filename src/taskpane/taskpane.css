@@ -42,19 +42,62 @@ select {
   border-radius: 4px;
 }
 
-.submit-btn {
-  margin-top: 10px;
+.form-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkbox-group {
+  flex-direction: row;
+  align-items: center;
+}
+
+.checkbox-group input {
+  margin-right: 8px;
+}
+
+.checkbox-group label {
+  margin-bottom: 0;
+}
+
+textarea {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #c8c6c4;
+  border-radius: 4px;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.action-btn {
   padding: 10px;
-  background-color: #0078d4;
   color: white;
   border: none;
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
+  font-weight: 600;
 }
 
-.submit-btn:hover {
+.primary {
+  background-color: #0078d4;
+}
+.primary:hover {
   background-color: #106ebe;
+}
+
+.secondary {
+  background-color: #605e5c;
+}
+.secondary:hover {
+  background-color: #323130;
 }
 
 .status {
