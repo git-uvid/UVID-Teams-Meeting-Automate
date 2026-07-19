@@ -77,37 +77,34 @@
         </div>
       </details>
 
-      <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315EFF; border-left: 4px solid #315EFF;">
-        <label for="flowAction">Flow Action (Select what you want to do)</label>
-        <select id="flowAction">
-          <option value="Schedule Meeting">Schedule Meeting (One-off)</option>
-          <option value="Schedule Recurring Meeting">Schedule Recurring Meeting</option>
-          <option value="Reschedule Meeting">Reschedule Meeting</option>
-          <option value="Reschedule Series">Reschedule Series</option>
-          <option value="Cancel Meeting">Cancel Meeting</option>
-          <option value="Cancel Series">Cancel Series</option>
-          <option value="Add Participant">Add Participant</option>
-          <option value="Update Meeting">Update Meeting (Change Title)</option>
-        </select>
-        <span class="help-text">This automatically sets the email subject to trigger Power Automate.</span>
-      </div>
-
-      <!-- ID Lookup Field (For Edit modes) -->
-      <div class="form-group section-box" id="idSection" style="display: none;">
-        <label for="meetingId">Meeting ID / Series ID</label>
-        <input type="text" id="meetingId" placeholder="Paste ID from SharePoint or confirmation email" />
-        <span class="help-text">Required for updates, rescheduling, or cancelling.</span>
+      <div class="nav-tabs">
+        <label><input type="radio" name="tabNav" value="newMeeting" checked> New Meeting</label>
+        <label><input type="radio" name="tabNav" value="editMeeting"> Edit Meeting</label>
       </div>
 
       <div class="ms-TextField">
-
-        <!-- CREATE FIELDS -->
-        <div id="createFields">
+        
+        <!-- ==============================================
+             NEW MEETING TAB
+             ============================================== -->
+        <div id="newMeetingContainer">
+          
           <div class="form-group">
             <label for="meetingTitle">Meeting Title</label>
             <input type="text" id="meetingTitle" />
             <span class="help-text">The title of the meeting.</span>
           </div>
+          
+          <div class="form-group">
+            <label for="meetingSubject">Meeting Subject</label>
+            <input type="text" id="meetingSubject" placeholder="Internal subject reference" />
+          </div>
+
+          <div class="form-group">
+            <label for="meetingEventMessage">Meeting Event Message (Invite Body)</label>
+            <textarea id="meetingEventMessage" placeholder="Agenda and details for the invite..."></textarea>
+          </div>
+
           <div class="form-group">
             <label for="project">Project</label>
             <input type="text" id="project" />
@@ -124,11 +121,17 @@
             <input type="text" id="leadEmail" class="email-input" />
             <div class="error-text">Invalid email format.</div>
           </div>
-          <div class="form-group">
-            <label for="participants">Participants</label>
-            <textarea id="participants" class="multi-email-input" placeholder="Paste emails here"></textarea>
-            <span class="help-text">Emails separated by commas, spaces, or newlines. Output uses semicolons.</span>
+          
+          <!-- Participants / Attendees -->
+          <div class="form-group section-box">
+            <label for="requiredAttendees">Required Attendees</label>
+            <textarea id="requiredAttendees" class="multi-email-input" placeholder="Paste emails here (comma/newline separated)"></textarea>
             <div class="error-text">Some emails are invalid.</div>
+            
+            <label for="optionalAttendees" style="margin-top:10px;">Optional Attendees</label>
+            <textarea id="optionalAttendees" class="multi-email-input" placeholder="Paste emails here"></textarea>
+            <div class="error-text">Some emails are invalid.</div>
+            <span class="help-text">Emails separated by commas, spaces, or newlines. Output uses semicolons automatically.</span>
           </div>
           
           <div class="form-group">
@@ -136,7 +139,7 @@
             <input type="date" id="startDate" />
           </div>
           <div class="form-group">
-            <label for="startTime">Time</label>
+            <label for="startTime">Start Time</label>
             <input type="time" id="startTime" />
           </div>
           <div class="form-group">
@@ -144,47 +147,105 @@
             <input type="number" id="duration" />
           </div>
           <div class="form-group">
+            <label for="endTime">End Time (Auto-calculated)</label>
+            <input type="time" id="endTime" readonly style="background-color: #f3f2f1;" />
+          </div>
+          <div class="form-group">
             <label for="timezone">Timezone</label>
             <select id="timezone">
               <option value="Afghanistan Standard Time">Afghanistan Standard Time</option>
-<option value="Alaskan Standard Time">Alaskan Standard Time</option>
-<option value="Arab Standard Time">Arab Standard Time</option>
-<option value="AUS Eastern Standard Time">AUS Eastern Standard Time</option>
-<option value="Central Europe Standard Time">Central Europe Standard Time</option>
-<option value="Central Standard Time">Central Standard Time</option>
-<option value="China Standard Time">China Standard Time</option>
-<option value="E. Europe Standard Time">E. Europe Standard Time</option>
-<option value="Eastern Standard Time">Eastern Standard Time</option>
-<option value="Egypt Standard Time">Egypt Standard Time</option>
-<option value="GMT Standard Time">GMT Standard Time</option>
-<option value="Greenwich Standard Time">Greenwich Standard Time</option>
-<option value="India Standard Time">India Standard Time</option>
-<option value="Israel Standard Time">Israel Standard Time</option>
-<option value="Korea Standard Time">Korea Standard Time</option>
-<option value="Mountain Standard Time">Mountain Standard Time</option>
-<option value="Pacific Standard Time">Pacific Standard Time</option>
-<option value="SE Asia Standard Time">SE Asia Standard Time</option>
-<option value="Singapore Standard Time">Singapore Standard Time</option>
-<option value="South Africa Standard Time">South Africa Standard Time</option>
-<option value="Tokyo Standard Time">Tokyo Standard Time</option>
-<option value="US Eastern Standard Time">US Eastern Standard Time</option>
-<option value="UTC">UTC</option>
+              <option value="Alaskan Standard Time">Alaskan Standard Time</option>
+              <option value="Arab Standard Time">Arab Standard Time</option>
+              <option value="AUS Eastern Standard Time">AUS Eastern Standard Time</option>
+              <option value="Central Europe Standard Time">Central Europe Standard Time</option>
+              <option value="Central Standard Time">Central Standard Time</option>
+              <option value="China Standard Time">China Standard Time</option>
+              <option value="E. Europe Standard Time">E. Europe Standard Time</option>
+              <option value="Eastern Standard Time">Eastern Standard Time</option>
+              <option value="Egypt Standard Time">Egypt Standard Time</option>
+              <option value="GMT Standard Time">GMT Standard Time</option>
+              <option value="Greenwich Standard Time">Greenwich Standard Time</option>
+              <option value="India Standard Time">India Standard Time</option>
+              <option value="Israel Standard Time">Israel Standard Time</option>
+              <option value="Korea Standard Time">Korea Standard Time</option>
+              <option value="Mountain Standard Time">Mountain Standard Time</option>
+              <option value="Pacific Standard Time">Pacific Standard Time</option>
+              <option value="SE Asia Standard Time">SE Asia Standard Time</option>
+              <option value="Singapore Standard Time">Singapore Standard Time</option>
+              <option value="South Africa Standard Time">South Africa Standard Time</option>
+              <option value="Tokyo Standard Time">Tokyo Standard Time</option>
+              <option value="US Eastern Standard Time">US Eastern Standard Time</option>
+              <option value="UTC">UTC</option>
             </select>
           </div>
           
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="isRecurring" />
+            <label for="isRecurring">This is a recurring meeting</label>
+          </div>
+
           <!-- RECURRING FIELDS -->
           <div id="recurringFields" style="display: none; padding: 10px; border-left: 4px solid #315EFF; margin-left: 5px; background: #DCE0FF; border-radius: 4px;">
             <div class="form-group">
-              <label for="recurrenceFrequency">Frequency</label>
+              <label for="recurrenceFrequency">Recurrence pattern (Frequency)</label>
               <select id="recurrenceFrequency">
+                <option value="Daily">Daily</option>
                 <option value="Weekly">Weekly</option>
-                <option value="Fortnightly">Fortnightly</option>
                 <option value="Monthly">Monthly</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="recurrenceDay">Day</label>
-              <select id="recurrenceDay">
+              <label for="recurrenceInterval">Recurrence interval</label>
+              <input type="number" id="recurrenceInterval" placeholder="e.g. 1 for every week" value="1" min="1" />
+              <span class="help-text">E.g., 1 = every week, 2 = every 2 weeks.</span>
+            </div>
+            <div class="form-group">
+              <label for="seriesEndDate">End Date</label>
+              <input type="date" id="seriesEndDate" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="generatedBy">Generated By</label>
+            <input type="text" id="generatedBy" readonly style="background-color: #f3f2f1;" />
+          </div>
+
+        </div> <!-- END NEW MEETING -->
+
+
+        <!-- ==============================================
+             EDIT MEETING TAB
+             ============================================== -->
+        <div id="editMeetingContainer" style="display: none;">
+          
+          <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315EFF; border-left: 4px solid #315EFF;">
+            <label for="flowAction">Flow Action (Select what you want to do)</label>
+            <select id="flowAction">
+              <option value="Reschedule Meeting">Reschedule Meeting</option>
+              <option value="Reschedule Series">Reschedule Series</option>
+              <option value="Cancel Meeting">Cancel Meeting</option>
+              <option value="Cancel Series">Cancel Series</option>
+              <option value="Add Participant">Add Participant</option>
+              <option value="Update Meeting">Update Meeting (Change Title)</option>
+            </select>
+            <span class="help-text">This automatically sets the email subject to trigger Power Automate.</span>
+          </div>
+
+          <div class="form-group section-box" id="idSection">
+            <label for="meetingId">Meeting ID / Series ID</label>
+            <input type="text" id="meetingId" placeholder="Paste ID from SharePoint or confirmation email" />
+            <span class="help-text">Required for updates, rescheduling, or cancelling.</span>
+          </div>
+
+          <!-- RESCHEDULE FIELDS -->
+          <div id="rescheduleFields" style="display: none;">
+            <div class="form-group" id="newDateSection">
+              <label for="newDate">New Date</label>
+              <input type="date" id="newDate" />
+            </div>
+            <div class="form-group" id="newDaySection" style="display: none;">
+              <label for="newDay">New Day</label>
+              <select id="newDay">
                 <option value="Monday">Monday</option>
                 <option value="Tuesday">Tuesday</option>
                 <option value="Wednesday">Wednesday</option>
@@ -193,92 +254,70 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="seriesEndDate">End Date</label>
-              <input type="date" id="seriesEndDate" />
+              <label for="newTime">New Time</label>
+              <input type="time" id="newTime" />
             </div>
           </div>
-        </div>
+          
+          <!-- REASON FIELD (Used in Reschedule and Cancel) -->
+          <div id="reasonField" style="display: none;">
+            <div class="form-group">
+              <label for="reason">Reason (Optional)</label>
+              <input type="text" id="reason" placeholder="e.g. Client requested change" />
+            </div>
+          </div>
 
-        <!-- RESCHEDULE FIELDS -->
-        <div id="rescheduleFields" style="display: none;">
-          <div class="form-group" id="newDateSection">
-            <label for="newDate">New Date</label>
-            <input type="date" id="newDate" />
+          <!-- ADD PARTICIPANT FIELDS -->
+          <div id="addParticipantFields" style="display: none;">
+            <div class="form-group">
+              <label for="newParticipantEmail">New Participant Email</label>
+              <input type="text" id="newParticipantEmail" class="email-input" />
+              <div class="error-text">Invalid email.</div>
+            </div>
+            <div class="form-group">
+              <label for="newParticipantName">Name (Optional)</label>
+              <input type="text" id="newParticipantName" />
+            </div>
           </div>
-          <div class="form-group" id="newDaySection" style="display: none;">
-            <label for="newDay">New Day</label>
-            <select id="newDay">
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="newTime">New Time</label>
-            <input type="time" id="newTime" />
-          </div>
-        </div>
-        
-        <!-- REASON FIELD (Used in Reschedule and Cancel) -->
-        <div id="reasonField" style="display: none;">
-          <div class="form-group">
-            <label for="reason">Reason (Optional)</label>
-            <input type="text" id="reason" placeholder="e.g. Client requested change" />
-          </div>
-        </div>
 
-        <!-- ADD PARTICIPANT FIELDS -->
-        <div id="addParticipantFields" style="display: none;">
-          <div class="form-group">
-            <label for="newParticipantEmail">New Participant Email</label>
-            <input type="text" id="newParticipantEmail" class="email-input" />
-            <div class="error-text">Invalid email.</div>
+          <!-- UPDATE TITLE FIELDS -->
+          <div id="updateTitleFields" style="display: none;">
+            <div class="form-group">
+              <label for="newTitle">New Title</label>
+              <input type="text" id="newTitle" />
+            </div>
           </div>
-          <div class="form-group">
-            <label for="newParticipantName">Name (Optional)</label>
-            <input type="text" id="newParticipantName" />
+          
+          <div class="form-group" id="timezoneFieldShared" style="display: none;">
+              <label for="timezoneEdit">Timezone</label>
+              <select id="timezoneEdit">
+                <option value="Afghanistan Standard Time">Afghanistan Standard Time</option>
+                <option value="Alaskan Standard Time">Alaskan Standard Time</option>
+                <option value="Arab Standard Time">Arab Standard Time</option>
+                <option value="AUS Eastern Standard Time">AUS Eastern Standard Time</option>
+                <option value="Central Europe Standard Time">Central Europe Standard Time</option>
+                <option value="Central Standard Time">Central Standard Time</option>
+                <option value="China Standard Time">China Standard Time</option>
+                <option value="E. Europe Standard Time">E. Europe Standard Time</option>
+                <option value="Eastern Standard Time">Eastern Standard Time</option>
+                <option value="Egypt Standard Time">Egypt Standard Time</option>
+                <option value="GMT Standard Time">GMT Standard Time</option>
+                <option value="Greenwich Standard Time">Greenwich Standard Time</option>
+                <option value="India Standard Time">India Standard Time</option>
+                <option value="Israel Standard Time">Israel Standard Time</option>
+                <option value="Korea Standard Time">Korea Standard Time</option>
+                <option value="Mountain Standard Time">Mountain Standard Time</option>
+                <option value="Pacific Standard Time">Pacific Standard Time</option>
+                <option value="SE Asia Standard Time">SE Asia Standard Time</option>
+                <option value="Singapore Standard Time">Singapore Standard Time</option>
+                <option value="South Africa Standard Time">South Africa Standard Time</option>
+                <option value="Tokyo Standard Time">Tokyo Standard Time</option>
+                <option value="US Eastern Standard Time">US Eastern Standard Time</option>
+                <option value="UTC">UTC</option>
+              </select>
           </div>
-        </div>
 
-        <!-- UPDATE TITLE FIELDS -->
-        <div id="updateTitleFields" style="display: none;">
-          <div class="form-group">
-            <label for="newTitle">New Title</label>
-            <input type="text" id="newTitle" />
-          </div>
-        </div>
-        
-        <div class="form-group" id="timezoneFieldShared" style="display: none;">
-            <label for="timezoneEdit">Timezone</label>
-            <select id="timezoneEdit">
-              <option value="Afghanistan Standard Time">Afghanistan Standard Time</option>
-<option value="Alaskan Standard Time">Alaskan Standard Time</option>
-<option value="Arab Standard Time">Arab Standard Time</option>
-<option value="AUS Eastern Standard Time">AUS Eastern Standard Time</option>
-<option value="Central Europe Standard Time">Central Europe Standard Time</option>
-<option value="Central Standard Time">Central Standard Time</option>
-<option value="China Standard Time">China Standard Time</option>
-<option value="E. Europe Standard Time">E. Europe Standard Time</option>
-<option value="Eastern Standard Time">Eastern Standard Time</option>
-<option value="Egypt Standard Time">Egypt Standard Time</option>
-<option value="GMT Standard Time">GMT Standard Time</option>
-<option value="Greenwich Standard Time">Greenwich Standard Time</option>
-<option value="India Standard Time">India Standard Time</option>
-<option value="Israel Standard Time">Israel Standard Time</option>
-<option value="Korea Standard Time">Korea Standard Time</option>
-<option value="Mountain Standard Time">Mountain Standard Time</option>
-<option value="Pacific Standard Time">Pacific Standard Time</option>
-<option value="SE Asia Standard Time">SE Asia Standard Time</option>
-<option value="Singapore Standard Time">Singapore Standard Time</option>
-<option value="South Africa Standard Time">South Africa Standard Time</option>
-<option value="Tokyo Standard Time">Tokyo Standard Time</option>
-<option value="US Eastern Standard Time">US Eastern Standard Time</option>
-<option value="UTC">UTC</option>
-            </select>
-        </div>
-
+        </div> <!-- END EDIT MEETING -->
       </div>
 
       <div class="button-group">
