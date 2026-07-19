@@ -1,44 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Email Properties</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meeting Scheduler</title>
 
     <!-- Office JavaScript API -->
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
-    
+    <script
+      type="text/javascript"
+      src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"
+    ></script>
+
+    <!-- MSAL.js -->
+    <script
+      type="text/javascript"
+      src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"
+    ></script>
+
     <link href="taskpane.css" rel="stylesheet" type="text/css" />
-</head>
-<body>
-    <section id="sideload-msg" style="display: flex;">
-        <h2>Please sideload your add-in to see app body.</h2>
-    </section>
-    <main id="app-body" style="display: none;">
-        <h2>Email Properties</h2>
-        <div class="property-container">
-            <div class="property">
-                <span class="label">Item ID:</span>
-                <span class="value" id="item-id">Loading...</span>
-            </div>
-            <div class="property">
-                <span class="label">Subject:</span>
-                <span class="value" id="subject">Loading...</span>
-            </div>
-            <div class="property">
-                <span class="label">Internet Message ID:</span>
-                <span class="value" id="internet-message-id">Loading...</span>
-            </div>
-            <div class="property">
-                <span class="label">From (Display Name):</span>
-                <span class="value" id="from-name">Loading...</span>
-            </div>
-            <div class="property">
-                <span class="label">From (Email Address):</span>
-                <span class="value" id="from-email">Loading...</span>
-            </div>
-        </div>
+  </head>
+  <body>
+    <main id="app-body">
+      <h2>Schedule Meeting</h2>
+      <div class="form-group">
+        <label for="meetingTitle">Meeting Title</label>
+        <input type="text" id="meetingTitle" placeholder="Enter title..." />
+      </div>
+      <div class="form-group">
+        <label for="meetingDate">Date</label>
+        <input type="text" id="meetingDate" placeholder="DD MMM YYYY" />
+      </div>
+      <div class="form-group">
+        <label for="meetingType">Meeting Type</label>
+        <select id="meetingType">
+          <option value="Client">Client</option>
+          <option value="Internal">Internal</option>
+        </select>
+      </div>
+
+      <button id="injectAndLog" class="submit-btn">Schedule & Log</button>
+
+      <div id="statusMessage" class="status"></div>
     </main>
-</body>
+    <script type="text/javascript" src="taskpane.js"></script>
+  </body>
 </html>
