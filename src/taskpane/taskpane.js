@@ -208,16 +208,16 @@ async function logToSharePoint() {
   
   const payload = {
     fields: {
-      Title: document.getElementById("meetingTitle").value || document.getElementById("newTitle").value || action,
-      MeetingID: document.getElementById("meetingId").value || "NEW_ID", 
-      Project: document.getElementById("project").value || "Unknown",
-      MeetingType: document.getElementById("meetingType").value || "Client",
-      LeadEmail: document.getElementById("leadEmail").value || "Unknown",
-      Timezone: document.getElementById("timezone").value || document.getElementById("timezoneEdit").value || "UTC",
-      Duration_x0028_minutes_x0029_: parseInt(document.getElementById("duration").value) || 0,
-      Participants: document.getElementById("participants").value.replace(/[\s,]+/g, ';') || document.getElementById("newParticipantEmail").value,
+      Title: document.getElementById("meetingTitle")?.value || document.getElementById("newTitle")?.value || action,
+      MeetingID: document.getElementById("meetingId")?.value || "NEW_ID", 
+      Project: document.getElementById("project")?.value || "Unknown",
+      MeetingType: document.getElementById("meetingType")?.value || "Client",
+      LeadEmail: document.getElementById("leadEmail")?.value || "Unknown",
+      Timezone: document.getElementById("timezone")?.value || document.getElementById("timezoneEdit")?.value || "UTC",
+      Duration_x0028_minutes_x0029_: parseInt(document.getElementById("duration")?.value) || 0,
+      Participants: document.getElementById("participants")?.value.replace(/[\s,]+/g, ';') || document.getElementById("newParticipantEmail")?.value || "",
       Recurring: action.includes("Recurring") || action.includes("Series"),
-      Status: action.includes("Cancel") ? "Cancelled" : (action.includes("Reschedule") ? "Rescheduled" : "Scheduled")
+      Status: "Requested"
     }
   };
   
