@@ -1,53 +1,120 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Meeting Scheduler</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UVID Teams Meeting Automate</title>
     <!-- Office JavaScript API -->
-    <script
-      type="text/javascript"
-      src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"
-    ></script>
-
-    <!-- MSAL.js -->
-    <script
-      type="text/javascript"
-      src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"
-    ></script>
-
-    <link href="taskpane.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    <style>
+      body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 10px; margin: 0; }
+      h2 { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px; text-align: center; }
+      .form-group { margin-bottom: 12px; }
+      label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #333; }
+      input[type="text"], input[type="datetime-local"], input[type="number"], select, textarea {
+        width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #ccc;
+        border-radius: 4px; font-size: 13px; font-family: inherit;
+      }
+      textarea { resize: vertical; min-height: 50px; }
+      .checkbox-group { display: flex; align-items: center; }
+      .checkbox-group input { width: auto; margin-right: 8px; }
+      .checkbox-group label { margin-bottom: 0; font-weight: normal; }
+      .button-group { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+      .action-btn {
+        width: 100%; padding: 8px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer;
+      }
+      .primary { background-color: #0f6cbd; color: white; }
+      .primary:hover { background-color: #0c5696; }
+      .secondary { background-color: #f3f2f1; color: #201f1e; border: 1px solid #8a8886; }
+      .secondary:hover { background-color: #edebe9; }
+      .status { margin-top: 15px; font-size: 13px; font-weight: 600; text-align: center; }
+      .small-btn { margin-left: auto; cursor: pointer; background: #fff; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;}
+      .help-text { display: block; font-size: 11px; color: #666; margin-top: 2px; }
+      .nav-tabs { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+      .nav-tabs label { display: flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer; }
+      .error-border { border-color: #d13438 !important; outline: 1px solid #d13438; }
+      .error-text { color: #d13438; font-size: 11px; margin-top: 2px; display: none; }
+    </style>
   </head>
   <body>
     <main id="app-body">
       <h2>Meeting Setup & Testing</h2>
 
-      <div class="ms-TextField">
-        <div class="form-group"><label for="meetingTitle">Meeting Title</label><input type="text" id="meetingTitle" /></div>
-        <div class="form-group"><label for="meetingSubject">Meeting Subject</label><input type="text" id="meetingSubject" /></div>
-        <div class="form-group"><label for="meetingEventmessagecontent">Meeting Event Message</label><textarea id="meetingEventmessagecontent"></textarea></div>
+      <div class="nav-tabs">
+        <label><input type="radio" name="navMode" value="create" checked /> Create Meeting</label>
+        <label><input type="radio" name="navMode" value="edit" /> Edit Meeting</label>
+      </div>
 
-        <div class="form-group"><label for="project">Project</label><input type="text" id="project" /></div>
-        
-        <div class="form-group">
-          <label for="meetingType">Meeting Type</label>
-          <select id="meetingType">
-            <option value="Client">Client</option>
-            <option value="Internal">Internal</option>
-          </select>
+      <div class="ms-TextField">
+        <div id="editMeetingSection" style="display: none; border-bottom: 1px dashed #ccc; margin-bottom: 15px; padding-bottom: 10px;">
+          <div class="form-group">
+            <label for="searchMeetingId">Existing Meeting ID</label>
+            <input type="text" id="searchMeetingId" />
+            <span class="help-text">Enter an existing Meeting ID to fetch details.</span>
+          </div>
+          <button id="fetchMeetingBtn" class="action-btn secondary">Fetch Meeting</button>
         </div>
-        
-        <div class="form-group"><label for="leadEmail">Lead Email</label><input type="text" id="leadEmail" /></div>
-        
-        <div class="form-group"><label for="startTime">Start Time</label><input type="datetime-local" id="startTime" /></div>
-        <div class="form-group"><label for="duration">Duration (minutes)</label><input type="number" id="duration" /></div>
-        <div class="form-group"><label for="endTime">End Time (Auto-calculated)</label><input type="text" id="endTime" readonly /></div>
-        
-        <div class="form-group">
-          <label for="timezone">Timezone <button id="refreshTimezoneBtn" class="small-btn">↻</button></label>
-          <select id="timezone">
+
+        <div id="commonFormSection">
+          <div class="form-group">
+            <label for="meetingTitle">Meeting Title</label>
+            <input type="text" id="meetingTitle" />
+            <span class="help-text">The title of the meeting.</span>
+          </div>
+          <div class="form-group">
+            <label for="meetingSubject">Meeting Subject</label>
+            <input type="text" id="meetingSubject" />
+            <span class="help-text">The subject line for the meeting invite.</span>
+          </div>
+          <div class="form-group">
+            <label for="meetingEventmessagecontent">Meeting Event Message</label>
+            <textarea id="meetingEventmessagecontent"></textarea>
+            <span class="help-text">The body content of the meeting invite.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="project">Project</label>
+            <input type="text" id="project" />
+            <span class="help-text">Project name or reference.</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="meetingType">Meeting Type</label>
+            <select id="meetingType">
+              <option value="Client">Client</option>
+              <option value="Internal">Internal</option>
+            </select>
+            <span class="help-text">Is this internal or for a client?</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="leadEmail">Lead Email</label>
+            <input type="text" id="leadEmail" class="email-input" />
+            <span class="help-text">Email address of the meeting lead.</span>
+            <div class="error-text">Invalid email format.</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="startTime">Start Time</label>
+            <input type="datetime-local" id="startTime" />
+            <span class="help-text">When the meeting begins.</span>
+          </div>
+          <div class="form-group">
+            <label for="duration">Duration (minutes)</label>
+            <input type="number" id="duration" />
+            <span class="help-text">Length of the meeting in minutes.</span>
+          </div>
+          <div class="form-group">
+            <label for="endTime">End Time (Auto-calculated)</label>
+            <input type="text" id="endTime" readonly />
+            <span class="help-text">Calculated automatically based on start time and duration.</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="timezone">Timezone <button id="refreshTimezoneBtn" class="small-btn">?</button></label>
+<select id="timezone">
             <option value="Afghanistan Standard Time">Afghanistan Standard Time</option>
             <option value="Alaskan Standard Time">Alaskan Standard Time</option>
             <option value="Aleutian Standard Time">Aleutian Standard Time</option>
@@ -188,60 +255,76 @@
             <option value="West Pacific Standard Time">West Pacific Standard Time</option>
             <option value="Yakutsk Standard Time">Yakutsk Standard Time</option>
             <option value="Yukon Standard Time">Yukon Standard Time</option>
-          </select>
-        </div>
+          </select>            <span class="help-text">The timezone of the meeting.</span>
+          </div>
 
-        <div class="form-group"><label for="participants">Participants</label><textarea id="participants"></textarea></div>
-        <div class="form-group"><label for="requiredAttendees">Required Attendees</label><textarea id="requiredAttendees"></textarea></div>
-        <div class="form-group"><label for="optionalAttendees">Optional Attendees</label><textarea id="optionalAttendees"></textarea></div>
-        
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="recurring" /> <label for="recurring">Recurring</label>
-        </div>
-        
-        <div class="form-group">
-          <label for="recurrencePattern">Recurrence Pattern</label>
-          <select id="recurrencePattern">
-            <option value=""></option>
-            <option value="Daily">Daily</option>
-            <option value="Weekly">Weekly</option>
-            <option value="Monthly">Monthly</option>
-          </select>
-        </div>
-        <div class="form-group"><label for="recurrenceInterval">Recurrence Interval</label><input type="number" id="recurrenceInterval" /></div>
+          <div class="form-group">
+            <label for="participants">Participants</label>
+            <textarea id="participants" class="multi-email-input" placeholder="Paste emails separated by commas, spaces, or newlines"></textarea>
+            <span class="help-text">Output will be formatted with semicolons. Invalid emails will be highlighted.</span>
+            <div class="error-text">Some emails are invalid.</div>
+          </div>
+          <div class="form-group">
+            <label for="requiredAttendees">Required Attendees</label>
+            <textarea id="requiredAttendees" class="multi-email-input" placeholder="Paste emails separated by commas, spaces, or newlines"></textarea>
+            <span class="help-text">Mandatory attendees.</span>
+            <div class="error-text">Some emails are invalid.</div>
+          </div>
+          <div class="form-group">
+            <label for="optionalAttendees">Optional Attendees</label>
+            <textarea id="optionalAttendees" class="multi-email-input" placeholder="Paste emails separated by commas, spaces, or newlines"></textarea>
+            <span class="help-text">Optional attendees.</span>
+            <div class="error-text">Some emails are invalid.</div>
+          </div>
+          
+          <div class="form-group checkbox-group">
+            <input type="checkbox" id="recurring" /> <label for="recurring">Recurring</label>
+          </div>
+          
+          <div class="form-group">
+            <label for="recurrencePattern">Recurrence Pattern</label>
+            <select id="recurrencePattern">
+              <option value=""></option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+            </select>
+            <span class="help-text">Frequency of the recurrence.</span>
+          </div>
+          <div class="form-group">
+            <label for="recurrenceInterval">Recurrence Interval</label>
+            <input type="number" id="recurrenceInterval" />
+            <span class="help-text">Interval between recurrences (e.g., every 2 weeks).</span>
+          </div>
 
-        <div class="form-group">
-          <label for="status">Status</label>
-          <select id="status">
-            <option value="Scheduled">Scheduled</option>
-            <option value="Rescheduled">Rescheduled</option>
-            <option value="Cancelled">Cancelled</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-        
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="transcriptFiled" checked /> <label for="transcriptFiled">Transcript Filed</label>
-        </div>
-        
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="decisionRecords" checked /> <label for="decisionRecords">Decision Records Created</label>
-        </div>
-        
-        <div class="form-group">
-          <label for="meetingStatus">Meeting Status</label>
-          <select id="meetingStatus">
-            <option value="Requested">Requested</option>
-            <option value="Created">Created</option>
-            <option value="Rescheduled">Rescheduled</option>
-            <option value="Cancelled">Cancelled</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status">
+              <option value="Scheduled">Scheduled</option>
+              <option value="Rescheduled">Rescheduled</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Completed">Completed</option>
+            </select>
+            <span class="help-text">Current status of the meeting schedule.</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="meetingStatus">Meeting Status</label>
+            <select id="meetingStatus">
+              <option value="Requested" selected>Requested</option>
+              <option value="Created">Created</option>
+              <option value="Rescheduled">Rescheduled</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Completed">Completed</option>
+            </select>
+            <span class="help-text">The overall status in the system.</span>
+          </div>
 
-        <div class="form-group">
-          <label for="generatedBy">Generated By</label>
-          <input type="text" id="generatedBy" readonly />
+          <div class="form-group">
+            <label for="generatedBy">Generated By</label>
+            <input type="text" id="generatedBy" readonly />
+            <span class="help-text">Automatically populated with your email address.</span>
+          </div>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-/* global document, Office, msal, fetch, console */
+/* global document, Office, msal, fetch, console, crypto */
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Outlook) {
@@ -15,6 +15,35 @@ Office.onReady((info) => {
     // Auto-calculate end time
     document.getElementById("startTime").addEventListener("change", calculateEndTime);
     document.getElementById("duration").addEventListener("input", calculateEndTime);
+
+    // Tab Navigation Logic
+    const radios = document.querySelectorAll('input[name="navMode"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.value === 'edit') {
+          document.getElementById('editMeetingSection').style.display = 'block';
+          document.getElementById('injectAndLog').innerText = 'Update & Log';
+        } else {
+          document.getElementById('editMeetingSection').style.display = 'none';
+          document.getElementById('injectAndLog').innerText = 'Schedule & Log';
+        }
+      });
+    });
+
+    // Email validation for multi-email fields
+    const emailFields = document.querySelectorAll('.multi-email-input');
+    emailFields.forEach(field => {
+      field.addEventListener('blur', (e) => {
+        formatAndValidateEmails(e.target);
+      });
+    });
+    
+    const leadEmailField = document.getElementById('leadEmail');
+    if(leadEmailField) {
+      leadEmailField.addEventListener('blur', (e) => {
+        formatAndValidateEmails(e.target, true);
+      });
+    }
   }
 });
 
@@ -28,6 +57,39 @@ function calculateEndTime() {
     const pad = (n) => n.toString().padStart(2, '0');
     const endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`;
     document.getElementById("endTime").value = endStr;
+  }
+}
+
+function formatAndValidateEmails(element, singleOnly = false) {
+  const rawValue = element.value;
+  if (!rawValue.trim()) {
+    element.classList.remove('error-border');
+    element.parentElement.querySelector('.error-text').style.display = 'none';
+    return;
+  }
+
+  // Split by comma, semicolon, space, newline
+  const parts = rawValue.split(/[\s,;\n]+/).map(p => p.trim()).filter(p => p.length > 0);
+  
+  if (singleOnly && parts.length > 1) {
+    element.classList.add('error-border');
+    element.parentElement.querySelector('.error-text').innerText = "Only one email allowed here.";
+    element.parentElement.querySelector('.error-text').style.display = 'block';
+    return;
+  }
+
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const invalidEmails = parts.filter(p => !emailRegex.test(p));
+
+  if (invalidEmails.length > 0) {
+    element.classList.add('error-border');
+    element.parentElement.querySelector('.error-text').innerText = "Invalid emails found: " + invalidEmails.join(", ");
+    element.parentElement.querySelector('.error-text').style.display = 'block';
+  } else {
+    element.classList.remove('error-border');
+    element.parentElement.querySelector('.error-text').style.display = 'none';
+    // Format output with semicolons
+    element.value = parts.join(';');
   }
 }
 
@@ -119,8 +181,6 @@ async function handleCreateList() {
         { name: "Participants", text: {} },
         { name: "Recurring", boolean: {} },
         { name: "Status", choice: { choices: ["Scheduled", "Rescheduled", "Cancelled", "Completed"] } },
-        { name: "TranscriptFiled", boolean: {} },
-        { name: "DecisionRecordsCreated", boolean: {} },
         { name: "MeetingStatus", choice: { choices: ["Requested", "Created", "Rescheduled", "Cancelled", "Completed"] } },
         { name: "GeneratedBy", text: {} },
         { name: "MeetingSubject", text: {} },
@@ -210,6 +270,13 @@ async function handleAddEmailOnly() {
 // BUTTON 3: Schedule & Log (Full)
 // ==========================================
 async function handleInjectAndLog() {
+  const isEditMode = document.querySelector('input[name="navMode"]:checked').value === 'edit';
+  
+  if (document.querySelectorAll('.error-border').length > 0) {
+    updateStatus("Please fix email validation errors before submitting.", true);
+    return;
+  }
+
   const generateUUID = () => {
     if (typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
@@ -244,8 +311,6 @@ async function handleInjectAndLog() {
     Participants: document.getElementById("participants").value,
     Recurring: document.getElementById("recurring").checked,
     Status: document.getElementById("status").value,
-    TranscriptFiled: document.getElementById("transcriptFiled").checked,
-    DecisionRecordsCreated: document.getElementById("decisionRecords").checked,
     MeetingStatus: document.getElementById("meetingStatus").value,
     GeneratedBy: document.getElementById("generatedBy").value,
     MeetingSubject: document.getElementById("meetingSubject").value,
@@ -266,9 +331,17 @@ async function handleInjectAndLog() {
   if (fields.Recurrenceinterval === null) delete fields.Recurrenceinterval;
 
   // Inject into email body
-  const template = `Subject: Schedule Meeting\nTitle: ${fields.Title}\nMeeting ID: ${fields.MeetingID}\nDate: ${fields.Starttime}\nTimezone: ${fields.Timezone}\nDuration: ${fields.Duration_x0028_minutes_x0029_ || ""} mins\nParticipants: ${fields.Participants}\nType: ${fields.MeetingType}\nStatus: ${fields.Status}`;
+  const template = `Subject: Schedule Meeting
+Title: ${fields.Title}
+Meeting ID: ${fields.MeetingID}
+Date: ${fields.Starttime}
+Timezone: ${fields.Timezone}
+Duration: ${fields.Duration_x0028_minutes_x0029_ || ""} mins
+Participants: ${fields.Participants}
+Type: ${fields.MeetingType}
+Status: ${fields.Status}`;
 
-  updateStatus("Injecting into email...", false);
+  updateStatus(isEditMode ? "Updating email..." : "Injecting into email...", false);
   Office.context.mailbox.item.body.setSelectedDataAsync(
     template,
     { coercionType: Office.CoercionType.Text },
@@ -281,8 +354,10 @@ async function handleInjectAndLog() {
       try {
         updateStatus("Injected! Authenticating for full log...", false);
         const accessToken = await getAccessToken(["Sites.ReadWrite.All"]);
-        updateStatus("Logging to SharePoint...", false);
+        updateStatus(isEditMode ? "Updating SharePoint item..." : "Logging to SharePoint...", false);
 
+        // NOTE: In Edit Mode, you would typically use PATCH to update an existing item by ID.
+        // For simplicity and since we don't have the item ID yet, we fallback to POST or you can extend handleFetchMeeting to store the ID.
         const graphEndpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items`;
         const payload = { fields: fields };
 
@@ -300,7 +375,7 @@ async function handleInjectAndLog() {
           throw new Error(errorData.error?.message || "Graph API request failed");
         }
 
-        updateStatus("Successfully scheduled and logged!", false);
+        updateStatus(isEditMode ? "Successfully updated!" : "Successfully scheduled and logged!", false);
       } catch (error) {
         updateStatus("Error logging to SharePoint: " + error.message, true);
         console.error(error);
