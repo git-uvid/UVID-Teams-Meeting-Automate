@@ -24,10 +24,11 @@
     <main id="app-body">
       <h2>Meeting Setup & Testing</h2>
 
-      <div class="form-container">
-        <div class="form-group"><label for="meetingTitle">Title</label><input type="text" id="meetingTitle" /></div>
-        <div class="form-group"><label for="meetingId">Meeting ID</label><input type="text" id="meetingId" /></div>
-        <div class="form-group"><label for="seriesId">Series ID</label><input type="text" id="seriesId" /></div>
+      <div class="ms-TextField">
+        <div class="form-group"><label for="meetingTitle">Meeting Title</label><input type="text" id="meetingTitle" /></div>
+        <div class="form-group"><label for="meetingSubject">Meeting Subject</label><input type="text" id="meetingSubject" /></div>
+        <div class="form-group"><label for="meetingEventmessagecontent">Meeting Event Message</label><textarea id="meetingEventmessagecontent"></textarea></div>
+
         <div class="form-group"><label for="project">Project</label><input type="text" id="project" /></div>
         
         <div class="form-group">
@@ -39,7 +40,10 @@
         </div>
         
         <div class="form-group"><label for="leadEmail">Lead Email</label><input type="text" id="leadEmail" /></div>
-        <div class="form-group"><label for="scheduledDate">Scheduled Date</label><input type="datetime-local" id="scheduledDate" /></div>
+        
+        <div class="form-group"><label for="startTime">Start Time</label><input type="datetime-local" id="startTime" /></div>
+        <div class="form-group"><label for="duration">Duration (minutes)</label><input type="number" id="duration" /></div>
+        <div class="form-group"><label for="endTime">End Time (Auto-calculated)</label><input type="text" id="endTime" readonly /></div>
         
         <div class="form-group">
           <label for="timezone">Timezone <button id="refreshTimezoneBtn" class="small-btn">↻</button></label>
@@ -187,13 +191,25 @@
           </select>
         </div>
 
-        <div class="form-group"><label for="duration">Duration (minutes)</label><input type="number" id="duration" /></div>
         <div class="form-group"><label for="participants">Participants</label><textarea id="participants"></textarea></div>
+        <div class="form-group"><label for="requiredAttendees">Required Attendees</label><textarea id="requiredAttendees"></textarea></div>
+        <div class="form-group"><label for="optionalAttendees">Optional Attendees</label><textarea id="optionalAttendees"></textarea></div>
         
         <div class="form-group checkbox-group">
           <input type="checkbox" id="recurring" /> <label for="recurring">Recurring</label>
         </div>
         
+        <div class="form-group">
+          <label for="recurrencePattern">Recurrence Pattern</label>
+          <select id="recurrencePattern">
+            <option value=""></option>
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="recurrenceInterval">Recurrence Interval</label><input type="number" id="recurrenceInterval" /></div>
+
         <div class="form-group">
           <label for="status">Status</label>
           <select id="status">

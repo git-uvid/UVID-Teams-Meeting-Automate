@@ -11,8 +11,25 @@ Office.onReady((info) => {
     if (Office.context.mailbox && Office.context.mailbox.userProfile) {
       document.getElementById("generatedBy").value = Office.context.mailbox.userProfile.emailAddress;
     }
+    
+    // Auto-calculate end time
+    document.getElementById("startTime").addEventListener("change", calculateEndTime);
+    document.getElementById("duration").addEventListener("input", calculateEndTime);
   }
 });
+
+function calculateEndTime() {
+  const startTimeVal = document.getElementById("startTime").value;
+  const durationVal = parseInt(document.getElementById("duration").value, 10);
+  if (startTimeVal && durationVal) {
+    const startDate = new Date(startTimeVal);
+    const endDate = new Date(startDate.getTime() + durationVal * 60000);
+    // format as YYYY-MM-DDTHH:mm:ss without Z
+    const pad = (n) => n.toString().padStart(2, '0');
+    const endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`;
+    document.getElementById("endTime").value = endStr;
+  }
+}
 
 const siteId = "YOUR_SITE_ID"; // Replace with your SharePoint Site ID
 const listId = "YOUR_LIST_ID"; // Replace with your SharePoint List ID
@@ -97,7 +114,6 @@ async function handleCreateList() {
         { name: "Project", text: {} },
         { name: "MeetingType", choice: { choices: ["Client", "Internal"] } },
         { name: "LeadEmail", text: {} },
-        { name: "ScheduledDate", text: {} },
         { name: "Timezone", text: {} },
         { name: "Duration_x0028_minutes_x0029_", number: {} },
         { name: "Participants", text: {} },
@@ -106,7 +122,15 @@ async function handleCreateList() {
         { name: "TranscriptFiled", boolean: {} },
         { name: "DecisionRecordsCreated", boolean: {} },
         { name: "MeetingStatus", choice: { choices: ["Requested", "Created", "Rescheduled", "Cancelled", "Completed"] } },
-        { name: "GeneratedBy", text: {} }
+        { name: "GeneratedBy", text: {} },
+        { name: "MeetingSubject", text: {} },
+        { name: "MeetingEventmessagecontent", text: {} },
+        { name: "Recurrencepattern", choice: { choices: ["Daily", "Monthly", "Weekly"] } },
+        { name: "Recurrenceinterval", number: {} },
+        { name: "Requiredattendees", text: {} },
+        { name: "Optionalattendees", text: {} },
+        { name: "Starttime", dateTime: {} },
+        { name: "Endtime", dateTime: {} }
       ],
       list: {
         template: "genericList"
@@ -186,15 +210,35 @@ async function handleAddEmailOnly() {
 // BUTTON 3: Schedule & Log (Full)
 // ==========================================
 async function handleInjectAndLog() {
+  const generateUUID = () => {
+    if (typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    } else {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  };
+
+  const generatedMeetingID = generateUUID();
+  const generatedSeriesID = generateUUID();
+
+  let startVal = document.getElementById("startTime").value;
+  if (startVal && startVal.length === 16) {
+    startVal += ":00";
+  }
+
   // Capture all fields
   const fields = {
     Title: document.getElementById("meetingTitle").value,
-    MeetingID: document.getElementById("meetingId").value,
-    SeriesID: document.getElementById("seriesId").value,
+    MeetingID: generatedMeetingID,
+    SeriesID: generatedSeriesID,
     Project: document.getElementById("project").value,
     MeetingType: document.getElementById("meetingType").value,
     LeadEmail: document.getElementById("leadEmail").value,
-    ScheduledDate: document.getElementById("scheduledDate").value,
+    Starttime: startVal,
+    Endtime: document.getElementById("endTime").value,
     Timezone: document.getElementById("timezone").value,
     Duration_x0028_minutes_x0029_: parseInt(document.getElementById("duration").value, 10) || null,
     Participants: document.getElementById("participants").value,
@@ -203,7 +247,13 @@ async function handleInjectAndLog() {
     TranscriptFiled: document.getElementById("transcriptFiled").checked,
     DecisionRecordsCreated: document.getElementById("decisionRecords").checked,
     MeetingStatus: document.getElementById("meetingStatus").value,
-    GeneratedBy: document.getElementById("generatedBy").value
+    GeneratedBy: document.getElementById("generatedBy").value,
+    MeetingSubject: document.getElementById("meetingSubject").value,
+    MeetingEventmessagecontent: document.getElementById("meetingEventmessagecontent").value,
+    Recurrencepattern: document.getElementById("recurrencePattern").value,
+    Recurrenceinterval: parseInt(document.getElementById("recurrenceInterval").value, 10) || null,
+    Requiredattendees: document.getElementById("requiredAttendees").value,
+    Optionalattendees: document.getElementById("optionalAttendees").value
   };
 
   if (!fields.Title) {
@@ -213,9 +263,10 @@ async function handleInjectAndLog() {
   
   // Clean up any nulls to avoid Graph API errors
   if (fields.Duration_x0028_minutes_x0029_ === null) delete fields.Duration_x0028_minutes_x0029_;
+  if (fields.Recurrenceinterval === null) delete fields.Recurrenceinterval;
 
   // Inject into email body
-  const template = `Subject: Schedule Meeting\nTitle: ${fields.Title}\nMeeting ID: ${fields.MeetingID}\nDate: ${fields.ScheduledDate}\nTimezone: ${fields.Timezone}\nDuration: ${fields.Duration_x0028_minutes_x0029_ || ""} mins\nParticipants: ${fields.Participants}\nType: ${fields.MeetingType}\nStatus: ${fields.Status}`;
+  const template = `Subject: Schedule Meeting\nTitle: ${fields.Title}\nMeeting ID: ${fields.MeetingID}\nDate: ${fields.Starttime}\nTimezone: ${fields.Timezone}\nDuration: ${fields.Duration_x0028_minutes_x0029_ || ""} mins\nParticipants: ${fields.Participants}\nType: ${fields.MeetingType}\nStatus: ${fields.Status}`;
 
   updateStatus("Injecting into email...", false);
   Office.context.mailbox.item.body.setSelectedDataAsync(
