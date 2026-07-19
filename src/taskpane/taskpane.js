@@ -385,8 +385,8 @@ async function logToSharePoint(action, activeTab) {
 async function getAccessToken() {
   const msalConfig = {
     auth: {
-      clientId: "8b7e28a4-0ef6-43b4-a4f6-8bb0b1d8f16b", 
-      authority: "https://login.microsoftonline.com/common",
+      clientId: "aae90a8e-999d-4b18-ba63-f9abfb54ee68", 
+      authority: "https://login.microsoftonline.com/bcbce4e4-0e70-42c4-bf70-cf41ea55f075",
       redirectUri: "http://localhost:3000"
     }
   };
