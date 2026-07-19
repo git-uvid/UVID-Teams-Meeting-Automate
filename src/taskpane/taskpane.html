@@ -9,33 +9,35 @@
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
     <style>
-      body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 10px; margin: 0; }
-      h2 { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px; text-align: center; }
-      .form-group { margin-bottom: 12px; }
-      label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #333; }
+      body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 16px; margin: 0; background-color: #ffffff; color: #323130; }
+      h2 { font-size: 18px; font-weight: 600; color: #201f1e; margin-bottom: 20px; text-align: center; }
+      .form-group { margin-bottom: 16px; }
+      label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #323130; }
       input[type="text"], input[type="datetime-local"], input[type="number"], select, textarea {
-        width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #ccc;
-        border-radius: 4px; font-size: 13px; font-family: inherit;
+        width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #8a8886;
+        border-radius: 4px; font-size: 14px; font-family: inherit; background-color: #ffffff; color: #323130;
       }
-      textarea { resize: vertical; min-height: 50px; }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: #0f6cbd; box-shadow: 0 0 0 1px #0f6cbd; }
+      textarea { resize: vertical; min-height: 60px; }
       .checkbox-group { display: flex; align-items: center; }
       .checkbox-group input { width: auto; margin-right: 8px; }
-      .checkbox-group label { margin-bottom: 0; font-weight: normal; }
-      .button-group { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+      .checkbox-group label { margin-bottom: 0; font-weight: normal; color: #323130; }
+      .button-group { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
       .action-btn {
-        width: 100%; padding: 8px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer;
+        width: 100%; padding: 10px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s;
       }
       .primary { background-color: #0f6cbd; color: white; }
       .primary:hover { background-color: #0c5696; }
       .secondary { background-color: #f3f2f1; color: #201f1e; border: 1px solid #8a8886; }
       .secondary:hover { background-color: #edebe9; }
-      .status { margin-top: 15px; font-size: 13px; font-weight: 600; text-align: center; }
-      .small-btn { margin-left: auto; cursor: pointer; background: #fff; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;}
-      .help-text { display: block; font-size: 11px; color: #666; margin-top: 2px; }
-      .nav-tabs { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-      .nav-tabs label { display: flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer; }
+      .status { margin-top: 15px; font-size: 13px; font-weight: 600; text-align: center; color: #323130; }
+      .small-btn { margin-left: auto; cursor: pointer; background: #ffffff; color: #323130; border: 1px solid #8a8886; border-radius: 4px; font-size: 12px; padding: 2px 6px; }
+      .small-btn:hover { background: #f3f2f1; }
+      .help-text { display: block; font-size: 11px; color: #605e5c; margin-top: 4px; }
+      .nav-tabs { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; border-bottom: 1px solid #e1dfdd; padding-bottom: 12px; }
+      .nav-tabs label { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; color: #323130; }
       .error-border { border-color: #d13438 !important; outline: 1px solid #d13438; }
-      .error-text { color: #d13438; font-size: 11px; margin-top: 2px; display: none; }
+      .error-text { color: #d13438; font-size: 12px; margin-top: 4px; display: none; font-weight: 600; }
     </style>
   </head>
   <body>
