@@ -351,8 +351,7 @@ async function logToSharePoint(action, activeTab) {
         Recurrenceinterval: isRecurring ? (parseInt(document.getElementById("recurrenceInterval")?.value) || 1) : 0,
         Starttime: startIso || null,
         Endtime: endIso || null,
-        GeneratedBy: document.getElementById("generatedBy")?.value || "Unknown",
-        Status: "Requested" // Initial SP status is requested, flow changes it
+        GeneratedBy: document.getElementById("generatedBy")?.value || "Unknown"
       }
     };
   } else {
@@ -361,8 +360,7 @@ async function logToSharePoint(action, activeTab) {
       fields: {
         Title: document.getElementById("newTitle")?.value || action,
         MeetingID: document.getElementById("meetingId")?.value || "",
-        SeriesID: document.getElementById("meetingId")?.value || "",
-        Status: "Requested"
+        SeriesID: document.getElementById("meetingId")?.value || ""
       }
     };
   }
