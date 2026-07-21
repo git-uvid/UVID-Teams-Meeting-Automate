@@ -28,6 +28,13 @@ Office.onReady((info) => {
   
   document.getElementById("startTime")?.addEventListener("change", calculateEndTime);
   document.getElementById("duration")?.addEventListener("input", calculateEndTime);
+  
+  document.getElementById("startDate")?.addEventListener("change", (e) => {
+    const rStart = document.getElementById("recurrenceStartDate");
+    if (rStart) {
+      rStart.value = e.target.value;
+    }
+  });
 
   document.getElementById("injectEmailOnly")?.addEventListener("click", () => handleSubmission(true, false));
   document.getElementById("logSpOnly")?.addEventListener("click", () => handleSubmission(false, true));
