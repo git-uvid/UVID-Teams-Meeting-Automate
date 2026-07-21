@@ -310,8 +310,8 @@ async function executeSPLog(action, activeTab, statusEl, successMsg, failMsg) {
 
 async function logToSharePoint(action, activeTab) {
   const token = await getAccessToken();
-  const siteId = "30e62035-7798-466d-89df-155e97b1a206"; 
-  const listId = "f5fbbf94-1a93-41bb-92cc-7d722b51cc13";
+  const siteId = "key65akcdgsfg2zhwxauifkam1a.sharepoint.com"; 
+  const listId = "093329a2-701b-4e93-9789-f561ef47ddce";
   
   let payload = {};
 
