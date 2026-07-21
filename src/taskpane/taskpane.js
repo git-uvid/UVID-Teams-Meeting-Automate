@@ -351,7 +351,7 @@ async function logToSharePoint(action, activeTab) {
         Recurrenceinterval: isRecurring ? (parseInt(document.getElementById("recurrenceInterval")?.value) || 1) : 0,
         Starttime: startIso || null,
         Endtime: endIso || null,
-        TriggeredBy: document.getElementById("generatedBy")?.value || "Unknown",
+        GeneratedBy: document.getElementById("generatedBy")?.value || "Unknown",
         Status: "Requested" // Initial SP status is requested, flow changes it
       }
     };
