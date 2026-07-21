@@ -187,9 +187,10 @@ async function handleSubmission(doEmail, doSP) {
     const timezone = document.getElementById("timezone").value;
     const freq = document.getElementById("recurrenceFrequency").value;
     const interval = document.getElementById("recurrenceInterval").value;
-    const endDate = formatDateText(document.getElementById("seriesEndDate").value);
+    const recurStartDate = formatDateText(document.getElementById("recurrenceStartDate").value);
+    const recurEndDate = formatDateText(document.getElementById("recurrenceEndDate").value);
     
-    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Interval: ${interval}<br>End date: ${endDate}`;
+    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Interval: ${interval}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
   }
   else if (action === "Reschedule Meeting") {
     const id = document.getElementById("meetingId").value;
@@ -349,6 +350,8 @@ async function logToSharePoint(action, activeTab) {
         Recurring: isRecurring,
         Recurrencepattern: isRecurring ? document.getElementById("recurrenceFrequency")?.value : "",
         Recurrenceinterval: isRecurring ? (parseInt(document.getElementById("recurrenceInterval")?.value) || 1) : 0,
+        Recurrencestartdate: (isRecurring && document.getElementById("recurrenceStartDate")?.value) ? document.getElementById("recurrenceStartDate").value + "T00:00:00Z" : null,
+        Recurrenceenddate: (isRecurring && document.getElementById("recurrenceEndDate")?.value) ? document.getElementById("recurrenceEndDate").value + "T00:00:00Z" : null,
         Starttime: startIso || null,
         Endtime: endIso || null,
         GeneratedBy: document.getElementById("generatedBy")?.value || "Unknown"
