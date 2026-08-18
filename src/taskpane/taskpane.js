@@ -42,6 +42,9 @@ Office.onReady((info) => {
   
   // Initial setup
   handleTabChange();
+
+  // Fetch projects on load
+  fetchProjects();
 });
 
 function calculateEndTime() {
@@ -148,6 +151,16 @@ function formatTimeText(timeStr) {
   return `${h}:${m} ${ampm}`;
 }
 
+function escapeHtml(unsafe) {
+  if (!unsafe) return "";
+  return unsafe.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function handleSubmission(doEmail, doSP) {
   const activeTab = document.querySelector('input[name="tabNav"]:checked').value;
   let action = "";
@@ -166,80 +179,80 @@ async function handleSubmission(doEmail, doSP) {
   let emailBody = "";
   
   if (action === "Schedule Meeting") {
-    const title = document.getElementById("meetingTitle").value;
-    const subject = document.getElementById("meetingSubject").value;
-    const bodyMsg = document.getElementById("meetingEventMessage").value.replace(/\n/g, "<br>");
-    const date = formatDateText(document.getElementById("startDate").value);
-    const time = formatTimeText(document.getElementById("startTime").value);
-    const endTime = formatTimeText(document.getElementById("endTime").value);
-    const duration = document.getElementById("duration").value;
-    const reqAttendees = document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ';');
-    const optAttendees = document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ';');
-    const type = document.getElementById("meetingType").value;
-    const timezone = document.getElementById("timezone").value;
+    const title = escapeHtml(document.getElementById("meetingTitle").value);
+    const subject = escapeHtml(document.getElementById("meetingSubject").value);
+    const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(/\n/g, "<br>");
+    const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
+    const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
+    const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
+    const duration = escapeHtml(document.getElementById("duration").value);
+    const reqAttendees = escapeHtml(document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ';'));
+    const optAttendees = escapeHtml(document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ';'));
+    const type = escapeHtml(document.getElementById("meetingType").value);
+    const timezone = escapeHtml(document.getElementById("timezone").value);
     
     emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Timezone: ${timezone}`;
   }
   else if (action === "Schedule Recurring Meeting") {
-    const title = document.getElementById("meetingTitle").value;
-    const subject = document.getElementById("meetingSubject").value;
-    const bodyMsg = document.getElementById("meetingEventMessage").value.replace(/\n/g, "<br>");
-    const date = formatDateText(document.getElementById("startDate").value);
-    const time = formatTimeText(document.getElementById("startTime").value);
-    const endTime = formatTimeText(document.getElementById("endTime").value);
-    const duration = document.getElementById("duration").value;
-    const reqAttendees = document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ';');
-    const optAttendees = document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ';');
-    const type = document.getElementById("meetingType").value;
-    const timezone = document.getElementById("timezone").value;
-    const freq = document.getElementById("recurrenceFrequency").value;
-    const interval = document.getElementById("recurrenceInterval").value;
-    const recurStartDate = formatDateText(document.getElementById("recurrenceStartDate").value);
-    const recurEndDate = formatDateText(document.getElementById("recurrenceEndDate").value);
+    const title = escapeHtml(document.getElementById("meetingTitle").value);
+    const subject = escapeHtml(document.getElementById("meetingSubject").value);
+    const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(/\n/g, "<br>");
+    const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
+    const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
+    const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
+    const duration = escapeHtml(document.getElementById("duration").value);
+    const reqAttendees = escapeHtml(document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ';'));
+    const optAttendees = escapeHtml(document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ';'));
+    const type = escapeHtml(document.getElementById("meetingType").value);
+    const timezone = escapeHtml(document.getElementById("timezone").value);
+    const freq = escapeHtml(document.getElementById("recurrenceFrequency").value);
+    const interval = escapeHtml(document.getElementById("recurrenceInterval").value);
+    const recurStartDate = escapeHtml(formatDateText(document.getElementById("recurrenceStartDate").value));
+    const recurEndDate = escapeHtml(formatDateText(document.getElementById("recurrenceEndDate").value));
     
     emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Interval: ${interval}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
   }
   else if (action === "Reschedule Meeting") {
-    const id = document.getElementById("meetingId").value;
-    const date = formatDateText(document.getElementById("newDate").value);
-    const time = formatTimeText(document.getElementById("newTime").value);
-    const timezone = document.getElementById("timezoneEdit").value;
-    const reason = document.getElementById("reason").value;
+    const id = escapeHtml(document.getElementById("meetingId").value);
+    const date = escapeHtml(formatDateText(document.getElementById("newDate").value));
+    const time = escapeHtml(formatTimeText(document.getElementById("newTime").value));
+    const timezone = escapeHtml(document.getElementById("timezoneEdit").value);
+    const reason = escapeHtml(document.getElementById("reason").value);
     
     emailBody = `Meeting ID: ${id}<br>New Date: ${date}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
   }
   else if (action === "Reschedule Series") {
-    const id = document.getElementById("meetingId").value;
-    const day = document.getElementById("newDay").value;
-    const time = formatTimeText(document.getElementById("newTime").value);
-    const timezone = document.getElementById("timezoneEdit").value;
-    const reason = document.getElementById("reason").value;
+    const id = escapeHtml(document.getElementById("meetingId").value);
+    const day = escapeHtml(document.getElementById("newDay").value);
+    const time = escapeHtml(formatTimeText(document.getElementById("newTime").value));
+    const timezone = escapeHtml(document.getElementById("timezoneEdit").value);
+    const reason = escapeHtml(document.getElementById("reason").value);
     
     emailBody = `Series ID: ${id}<br>New Day: ${day}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
   }
   else if (action === "Cancel Meeting") {
-    const id = document.getElementById("meetingId").value;
-    const reason = document.getElementById("reason").value;
+    const id = escapeHtml(document.getElementById("meetingId").value);
+    const reason = escapeHtml(document.getElementById("reason").value);
     
     emailBody = `Meeting ID: ${id}<br>Reason: ${reason}`;
   }
   else if (action === "Cancel Series") {
-    const id = document.getElementById("meetingId").value;
-    const reason = document.getElementById("reason").value;
+    const id = escapeHtml(document.getElementById("meetingId").value);
+    const reason = escapeHtml(document.getElementById("reason").value);
     
     emailBody = `Series ID: ${id}<br>Reason: ${reason}`;
   }
   else if (action === "Add Participant") {
-    const id = document.getElementById("meetingId").value;
-    const newParticipant = document.getElementById("newParticipantEmail").value;
-    const name = document.getElementById("newParticipantName").value;
+    const id = escapeHtml(document.getElementById("meetingId").value);
+    const newParticipant = escapeHtml(document.getElementById("newParticipantEmail").value);
+    const name = escapeHtml(document.getElementById("newParticipantName").value);
     
     emailBody = `Meeting ID: ${id}<br>New Participant: ${newParticipant}`;
     if (name) emailBody += `<br>Name: ${name}`;
   }
   else if (action === "Update Meeting") {
-    const id = document.getElementById("meetingId").value;
-    const newTitle = document.getElementById("newTitle").value;
+    const id = escapeHtml(document.getElementById("meetingId").value);
+    const newTitle = escapeHtml(document.getElementById("newTitle").value);
     
     emailBody = `Meeting ID: ${id}<br>New Title: ${newTitle}`;
   }
@@ -414,6 +427,51 @@ async function getAccessToken() {
     const request = { scopes: ["Sites.ReadWrite.All"] };
     const response = await msalInstance.acquireTokenPopup(request);
     return response.accessToken;
+  }
+}
+
+async function fetchProjects() {
+  const projectSelect = document.getElementById("project");
+  if (!projectSelect) return;
+  
+  try {
+    const token = await getAccessToken();
+    const siteId = "key65akcdgsfg2zhwxauifkam1a.sharepoint.com";
+    const listId = "42699509-b16d-4e35-a7d7-0ff95b9b4f0c";
+    
+    const response = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch projects: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    
+    // Clear existing options
+    projectSelect.innerHTML = '<option value="">Select a Project</option>';
+    
+    if (data.value && data.value.length > 0) {
+      data.value.forEach(item => {
+        const title = item.fields.Title || item.fields.ProjectName;
+        if (title) {
+          const option = document.createElement("option");
+          option.value = title;
+          option.text = title;
+          projectSelect.appendChild(option);
+        }
+      });
+    } else {
+      projectSelect.innerHTML = '<option value="">No projects found</option>';
+    }
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    projectSelect.innerHTML = '<option value="">Error loading projects</option>';
   }
 }
 
