@@ -4,5 +4,13 @@
   ],
   "extends": [
     "plugin:office-addins/recommended"
-  ]
+  ],
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "globals": {
+    "Office": "readonly",
+    "msal": "readonly"
+  }
 }

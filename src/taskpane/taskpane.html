@@ -1,92 +1,311 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>UVID Teams Meeting Automate</title>
     <!-- Office JavaScript API -->
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
-    <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    <script
+      type="text/javascript"
+      src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"
+    ></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap');
-      
-      body { font-family: 'Roboto', "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 16px; margin: 0; background-color: #ffffff; color: #1D1D1D; }
-      h2 { font-size: 20px; font-weight: 600; color: #315EFF; margin-bottom: 20px; text-align: center; }
-      .form-group { margin-bottom: 16px; }
-      label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #1D1D1D; }
-      input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
-        width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #BDBDBD;
-        border-radius: 4px; font-size: 14px; font-family: inherit; background-color: #ffffff; color: #1D1D1D;
+      @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap");
+
+      body {
+        font-family: "Roboto", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        padding: 16px;
+        margin: 0;
+        background-color: #ffffff;
+        color: #1d1d1d;
       }
-      input:focus, select:focus, textarea:focus { outline: none; border-color: #315EFF; box-shadow: 0 0 0 1px #315EFF; }
-      textarea { resize: vertical; min-height: 60px; }
-      .checkbox-group { display: flex; align-items: center; }
-      .checkbox-group input { width: auto; margin-right: 8px; }
-      .checkbox-group label { margin-bottom: 0; font-weight: normal; color: #1D1D1D; }
-      .button-group { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+      h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #315eff;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 6px;
+        color: #1d1d1d;
+      }
+      input[type="text"],
+      input[type="date"],
+      input[type="time"],
+      input[type="number"],
+      select,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        border: 1px solid #bdbdbd;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: inherit;
+        background-color: #ffffff;
+        color: #1d1d1d;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #315eff;
+        box-shadow: 0 0 0 1px #315eff;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+      }
+      .checkbox-group input {
+        width: auto;
+        margin-right: 8px;
+      }
+      .checkbox-group label {
+        margin-bottom: 0;
+        font-weight: normal;
+        color: #1d1d1d;
+      }
+      .button-group {
+        margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
       .action-btn {
-        width: 100%; padding: 12px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s, transform 0.1s;
+        width: 100%;
+        padding: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.1s;
       }
-      .action-btn:active { transform: scale(0.98); }
-      .primary { background-color: #315EFF; color: #FFFFFF; }
-      .primary:hover { background-color: #003DC4; }
-      .secondary { background-color: #FFFFFF; color: #F79E02; border: 2px solid #F79E02; }
-      .secondary:hover { background-color: #FFD0AD; }
-      .status { margin-top: 15px; font-size: 14px; font-weight: 600; text-align: center; color: #1D1D1D; }
-      .small-btn { margin-left: auto; cursor: pointer; background: #ffffff; color: #1D1D1D; border: 1px solid #BDBDBD; border-radius: 4px; font-size: 12px; padding: 2px 6px; }
-      .small-btn:hover { background: #E0E0E0; }
-      .help-text { display: block; font-size: 12px; color: #4F4F4F; margin-top: 4px; }
-      .nav-tabs { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; border-bottom: 1px solid #E0E0E0; padding-bottom: 12px; }
-      .nav-tabs label { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; color: #1D1D1D; }
-      .error-border { border-color: #EB5757 !important; outline: 1px solid #EB5757; }
-      .error-text { color: #EB5757; font-size: 12px; margin-top: 4px; display: none; font-weight: 600; }
-      .section-box { border: 1px solid #E0E0E0; padding: 12px; border-radius: 4px; margin-bottom: 15px; background-color: #FFFFFF; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-      
-      .info-box { margin-bottom: 15px; border: 1px solid #ACB5FF; background-color: #DCE0FF; padding: 10px; border-radius: 4px; font-size: 12px; }
-      .info-box strong { display: block; margin-bottom: 5px; color: #00227A; }
-      .info-box ul { margin: 5px 0 0 0; padding-left: 20px; }
-      .info-box li { margin-bottom: 3px; color: #1D1D1D; }
-      
+      .action-btn:active {
+        transform: scale(0.98);
+      }
+      .primary {
+        background-color: #315eff;
+        color: #ffffff;
+      }
+      .primary:hover {
+        background-color: #003dc4;
+      }
+      .secondary {
+        background-color: #ffffff;
+        color: #f79e02;
+        border: 2px solid #f79e02;
+      }
+      .secondary:hover {
+        background-color: #ffd0ad;
+      }
+      .status {
+        margin-top: 15px;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        color: #1d1d1d;
+      }
+      .small-btn {
+        margin-left: auto;
+        cursor: pointer;
+        background: #ffffff;
+        color: #1d1d1d;
+        border: 1px solid #bdbdbd;
+        border-radius: 4px;
+        font-size: 12px;
+        padding: 2px 6px;
+      }
+      .small-btn:hover {
+        background: #e0e0e0;
+      }
+      .help-text {
+        display: block;
+        font-size: 12px;
+        color: #4f4f4f;
+        margin-top: 4px;
+      }
+      .nav-tabs {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 12px;
+      }
+      .nav-tabs label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #1d1d1d;
+      }
+      .error-border {
+        border-color: #eb5757 !important;
+        outline: 1px solid #eb5757;
+      }
+      .error-text {
+        color: #eb5757;
+        font-size: 12px;
+        margin-top: 4px;
+        display: none;
+        font-weight: 600;
+      }
+      .section-box {
+        border: 1px solid #e0e0e0;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      .info-box {
+        margin-bottom: 15px;
+        border: 1px solid #acb5ff;
+        background-color: #dce0ff;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .info-box strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #00227a;
+      }
+      .info-box ul {
+        margin: 5px 0 0 0;
+        padding-left: 20px;
+      }
+      .info-box li {
+        margin-bottom: 3px;
+        color: #1d1d1d;
+      }
+
       /* Toggle for info box */
-      details { margin-bottom: 15px; font-size: 14px; }
-      summary { font-weight: 600; cursor: pointer; padding: 12px; background: #DCE0FF; border: 1px solid #ACB5FF; border-radius: 4px; color: #00227A; transition: background 0.2s; }
-      summary:hover { background: #ACB5FF; }
-      .details-content { padding: 12px; border: 1px solid #ACB5FF; border-top: none; background: #FFFFFF; border-radius: 0 0 4px 4px; }
+      details {
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+      summary {
+        font-weight: 600;
+        cursor: pointer;
+        padding: 12px;
+        background: #dce0ff;
+        border: 1px solid #acb5ff;
+        border-radius: 4px;
+        color: #00227a;
+        transition: background 0.2s;
+      }
+      summary:hover {
+        background: #acb5ff;
+      }
+      .details-content {
+        padding: 12px;
+        border: 1px solid #acb5ff;
+        border-top: none;
+        background: #ffffff;
+        border-radius: 0 0 4px 4px;
+      }
     </style>
   </head>
   <body>
     <main id="app-body">
       <h2>UVID Teams Meeting Automate</h2>
-      
-      <div class="nav-tabs" style="display: flex; background: #f3f2f1; border-radius: 4px; padding: 4px; margin-bottom: 20px;">
-        <label class="tab-label" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 4px; font-weight: 600;">
-          <input type="radio" name="tabNav" value="newMeeting" checked style="display:none;"> New Meeting
+
+      <div
+        class="nav-tabs"
+        style="
+          display: flex;
+          background: #f3f2f1;
+          border-radius: 4px;
+          padding: 4px;
+          margin-bottom: 20px;
+        "
+      >
+        <label
+          class="tab-label"
+          style="
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: 600;
+          "
+        >
+          <input type="radio" name="tabNav" value="newMeeting" checked style="display: none" /> New
+          Meeting
         </label>
-        <label class="tab-label" style="flex: 1; text-align: center; cursor: pointer; padding: 8px; border-radius: 4px; font-weight: 600;">
-          <input type="radio" name="tabNav" value="editMeeting" style="display:none;"> Edit Meeting
+        <label
+          class="tab-label"
+          style="
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: 600;
+          "
+        >
+          <input type="radio" name="tabNav" value="editMeeting" style="display: none" /> Edit
+          Meeting
         </label>
       </div>
-      
+
       <style>
-        .tab-label { transition: background 0.2s, color 0.2s; color: #1D1D1D; }
-        .tab-label:has(input:checked) { background: #315EFF; color: #ffffff; }
+        .tab-label {
+          transition:
+            background 0.2s,
+            color 0.2s;
+          color: #1d1d1d;
+        }
+        .tab-label:has(input:checked) {
+          background: #315eff;
+          color: #ffffff;
+        }
       </style>
 
       <div class="ms-TextField">
-        
         <!-- ==============================================
              NEW MEETING TAB
              ============================================== -->
         <div id="newMeetingContainer">
-          
-          <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315EFF; border-left: 4px solid #315EFF;">
+          <div
+            class="form-group section-box"
+            style="
+              background-color: #ffffff;
+              border: 1px solid #315eff;
+              border-left: 4px solid #315eff;
+            "
+          >
             <label for="flowActionNew">Flow Action (Select what you want to do)</label>
             <select id="flowActionNew">
               <option value="Schedule Meeting">Schedule Meeting (One-off)</option>
               <option value="Schedule Recurring Meeting">Schedule Recurring Meeting</option>
             </select>
-            <span class="help-text">This automatically sets the email subject to trigger Power Automate.</span>
+            <span class="help-text"
+              >This automatically sets the email subject to trigger Power Automate.</span
+            >
           </div>
 
           <div class="form-group">
@@ -94,7 +313,7 @@
             <input type="text" id="meetingTitle" />
             <span class="help-text">The title of the meeting.</span>
           </div>
-          
+
           <div class="form-group">
             <label for="meetingSubject">Meeting Subject</label>
             <input type="text" id="meetingSubject" placeholder="Internal subject reference" />
@@ -102,7 +321,10 @@
 
           <div class="form-group">
             <label for="meetingEventMessage">Meeting Event Message (Invite Body)</label>
-            <textarea id="meetingEventMessage" placeholder="Agenda and details for the invite..."></textarea>
+            <textarea
+              id="meetingEventMessage"
+              placeholder="Agenda and details for the invite..."
+            ></textarea>
           </div>
 
           <div class="form-group">
@@ -123,19 +345,30 @@
             <input type="text" id="leadEmail" class="email-input" />
             <div class="error-text">Invalid email format.</div>
           </div>
-          
+
           <!-- Participants / Attendees -->
           <div class="form-group section-box">
             <label for="requiredAttendees">Required Attendees</label>
-            <textarea id="requiredAttendees" class="multi-email-input" placeholder="Paste emails here (comma/newline separated)"></textarea>
+            <textarea
+              id="requiredAttendees"
+              class="multi-email-input"
+              placeholder="Paste emails here (comma/newline separated)"
+            ></textarea>
             <div class="error-text">Some emails are invalid.</div>
-            
-            <label for="optionalAttendees" style="margin-top:10px;">Optional Attendees</label>
-            <textarea id="optionalAttendees" class="multi-email-input" placeholder="Paste emails here"></textarea>
+
+            <label for="optionalAttendees" style="margin-top: 10px">Optional Attendees</label>
+            <textarea
+              id="optionalAttendees"
+              class="multi-email-input"
+              placeholder="Paste emails here"
+            ></textarea>
             <div class="error-text">Some emails are invalid.</div>
-            <span class="help-text">Emails separated by commas, spaces, or newlines. Output uses semicolons automatically.</span>
+            <span class="help-text"
+              >Emails separated by commas, spaces, or newlines. Output uses semicolons
+              automatically.</span
+            >
           </div>
-          
+
           <div class="form-group">
             <label for="startDate">Date</label>
             <input type="date" id="startDate" />
@@ -150,7 +383,7 @@
           </div>
           <div class="form-group">
             <label for="endTime">End Time (Auto-calculated)</label>
-            <input type="time" id="endTime" readonly style="background-color: #f3f2f1;" />
+            <input type="time" id="endTime" readonly style="background-color: #f3f2f1" />
           </div>
           <div class="form-group">
             <label for="timezone">Timezone</label>
@@ -180,9 +413,19 @@
               <option value="UTC">UTC</option>
             </select>
           </div>
-          
+
           <!-- RECURRING FIELDS -->
-          <div id="recurringFields" style="display: none; padding: 10px; border-left: 4px solid #315EFF; margin-left: 5px; background: #DCE0FF; border-radius: 4px;">
+          <div
+            id="recurringFields"
+            style="
+              display: none;
+              padding: 10px;
+              border-left: 4px solid #315eff;
+              margin-left: 5px;
+              background: #dce0ff;
+              border-radius: 4px;
+            "
+          >
             <div class="form-group">
               <label for="recurrenceFrequency">Recurrence pattern (Frequency)</label>
               <select id="recurrenceFrequency">
@@ -193,12 +436,23 @@
             </div>
             <div class="form-group">
               <label for="recurrenceInterval">Recurrence interval</label>
-              <input type="number" id="recurrenceInterval" placeholder="e.g. 1 for every week" value="1" min="1" />
+              <input
+                type="number"
+                id="recurrenceInterval"
+                placeholder="e.g. 1 for every week"
+                value="1"
+                min="1"
+              />
               <span class="help-text">E.g., 1 = every week, 2 = every 2 weeks.</span>
             </div>
             <div class="form-group">
               <label for="recurrenceStartDate">Recurrence start date</label>
-              <input type="date" id="recurrenceStartDate" readonly style="background-color: #f3f2f1;" />
+              <input
+                type="date"
+                id="recurrenceStartDate"
+                readonly
+                style="background-color: #f3f2f1"
+              />
               <span class="help-text">Format: YYYY-MM-DD (Used for Power Automate)</span>
             </div>
             <div class="form-group">
@@ -210,18 +464,23 @@
 
           <div class="form-group">
             <label for="generatedBy">Generated By</label>
-            <input type="text" id="generatedBy" readonly style="background-color: #f3f2f1;" />
+            <input type="text" id="generatedBy" readonly style="background-color: #f3f2f1" />
           </div>
-
-        </div> <!-- END NEW MEETING -->
-
+        </div>
+        <!-- END NEW MEETING -->
 
         <!-- ==============================================
              EDIT MEETING TAB
              ============================================== -->
-        <div id="editMeetingContainer" style="display: none;">
-          
-          <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315EFF; border-left: 4px solid #315EFF;">
+        <div id="editMeetingContainer" style="display: none">
+          <div
+            class="form-group section-box"
+            style="
+              background-color: #ffffff;
+              border: 1px solid #315eff;
+              border-left: 4px solid #315eff;
+            "
+          >
             <label for="flowAction">Flow Action (Select what you want to do)</label>
             <select id="flowAction">
               <option value="Reschedule Meeting">Reschedule Meeting</option>
@@ -231,22 +490,39 @@
               <option value="Add Participant">Add Participant</option>
               <option value="Update Meeting">Update Meeting (Change Title)</option>
             </select>
-            <span class="help-text">This automatically sets the email subject to trigger Power Automate.</span>
+            <span class="help-text"
+              >This automatically sets the email subject to trigger Power Automate.</span
+            >
           </div>
 
           <div class="form-group section-box" id="idSection">
             <label for="meetingId">Meeting ID / Series ID</label>
-            <input type="text" id="meetingId" placeholder="Paste ID from SharePoint or confirmation email" />
+            <div style="display: flex; gap: 8px">
+              <input
+                type="text"
+                id="meetingId"
+                placeholder="Paste ID from SharePoint or confirmation email"
+              />
+              <button
+                type="button"
+                id="btnFetchMeeting"
+                class="action-btn primary"
+                style="width: auto; padding: 8px 16px; min-width: 80px"
+              >
+                Fetch
+              </button>
+            </div>
             <span class="help-text">Required for updates, rescheduling, or cancelling.</span>
+            <div id="fetchMeetingStatus" class="status" style="margin-top: 8px; font-size: 13px; text-align: left;"></div>
           </div>
 
           <!-- RESCHEDULE FIELDS -->
-          <div id="rescheduleFields" style="display: none;">
+          <div id="rescheduleFields" style="display: none">
             <div class="form-group" id="newDateSection">
               <label for="newDate">New Date</label>
               <input type="date" id="newDate" />
             </div>
-            <div class="form-group" id="newDaySection" style="display: none;">
+            <div class="form-group" id="newDaySection" style="display: none">
               <label for="newDay">New Day</label>
               <select id="newDay">
                 <option value="Monday">Monday</option>
@@ -261,9 +537,9 @@
               <input type="time" id="newTime" />
             </div>
           </div>
-          
+
           <!-- REASON FIELD (Used in Reschedule and Cancel) -->
-          <div id="reasonField" style="display: none;">
+          <div id="reasonField" style="display: none">
             <div class="form-group">
               <label for="reason">Reason (Optional)</label>
               <input type="text" id="reason" placeholder="e.g. Client requested change" />
@@ -271,7 +547,7 @@
           </div>
 
           <!-- ADD PARTICIPANT FIELDS -->
-          <div id="addParticipantFields" style="display: none;">
+          <div id="addParticipantFields" style="display: none">
             <div class="form-group">
               <label for="newParticipantEmail">New Participant Email</label>
               <input type="text" id="newParticipantEmail" class="email-input" />
@@ -284,48 +560,54 @@
           </div>
 
           <!-- UPDATE TITLE FIELDS -->
-          <div id="updateTitleFields" style="display: none;">
+          <div id="updateTitleFields" style="display: none">
             <div class="form-group">
               <label for="newTitle">New Title</label>
               <input type="text" id="newTitle" />
             </div>
           </div>
-          
-          <div class="form-group" id="timezoneFieldShared" style="display: none;">
-              <label for="timezoneEdit">Timezone</label>
-              <select id="timezoneEdit">
-                <option value="Afghanistan Standard Time">Afghanistan Standard Time</option>
-                <option value="Alaskan Standard Time">Alaskan Standard Time</option>
-                <option value="Arab Standard Time">Arab Standard Time</option>
-                <option value="AUS Eastern Standard Time">AUS Eastern Standard Time</option>
-                <option value="Central Europe Standard Time">Central Europe Standard Time</option>
-                <option value="Central Standard Time">Central Standard Time</option>
-                <option value="China Standard Time">China Standard Time</option>
-                <option value="E. Europe Standard Time">E. Europe Standard Time</option>
-                <option value="Eastern Standard Time">Eastern Standard Time</option>
-                <option value="Egypt Standard Time">Egypt Standard Time</option>
-                <option value="GMT Standard Time">GMT Standard Time</option>
-                <option value="Greenwich Standard Time">Greenwich Standard Time</option>
-                <option value="India Standard Time">India Standard Time</option>
-                <option value="Israel Standard Time">Israel Standard Time</option>
-                <option value="Korea Standard Time">Korea Standard Time</option>
-                <option value="Mountain Standard Time">Mountain Standard Time</option>
-                <option value="Pacific Standard Time">Pacific Standard Time</option>
-                <option value="SE Asia Standard Time">SE Asia Standard Time</option>
-                <option value="Singapore Standard Time">Singapore Standard Time</option>
-                <option value="South Africa Standard Time">South Africa Standard Time</option>
-                <option value="Tokyo Standard Time">Tokyo Standard Time</option>
-                <option value="US Eastern Standard Time">US Eastern Standard Time</option>
-                <option value="UTC">UTC</option>
-              </select>
-          </div>
 
-        </div> <!-- END EDIT MEETING -->
+          <div class="form-group" id="timezoneFieldShared" style="display: none">
+            <label for="timezoneEdit">Timezone</label>
+            <select id="timezoneEdit">
+              <option value="Afghanistan Standard Time">Afghanistan Standard Time</option>
+              <option value="Alaskan Standard Time">Alaskan Standard Time</option>
+              <option value="Arab Standard Time">Arab Standard Time</option>
+              <option value="AUS Eastern Standard Time">AUS Eastern Standard Time</option>
+              <option value="Central Europe Standard Time">Central Europe Standard Time</option>
+              <option value="Central Standard Time">Central Standard Time</option>
+              <option value="China Standard Time">China Standard Time</option>
+              <option value="E. Europe Standard Time">E. Europe Standard Time</option>
+              <option value="Eastern Standard Time">Eastern Standard Time</option>
+              <option value="Egypt Standard Time">Egypt Standard Time</option>
+              <option value="GMT Standard Time">GMT Standard Time</option>
+              <option value="Greenwich Standard Time">Greenwich Standard Time</option>
+              <option value="India Standard Time">India Standard Time</option>
+              <option value="Israel Standard Time">Israel Standard Time</option>
+              <option value="Korea Standard Time">Korea Standard Time</option>
+              <option value="Mountain Standard Time">Mountain Standard Time</option>
+              <option value="Pacific Standard Time">Pacific Standard Time</option>
+              <option value="SE Asia Standard Time">SE Asia Standard Time</option>
+              <option value="Singapore Standard Time">Singapore Standard Time</option>
+              <option value="South Africa Standard Time">South Africa Standard Time</option>
+              <option value="Tokyo Standard Time">Tokyo Standard Time</option>
+              <option value="US Eastern Standard Time">US Eastern Standard Time</option>
+              <option value="UTC">UTC</option>
+            </select>
+          </div>
+        </div>
+        <!-- END EDIT MEETING -->
       </div>
 
-      <div class="button-group" style="display: flex; flex-direction: column; gap: 10px;">
+      <div class="button-group" style="display: flex; flex-direction: column; gap: 10px">
         <button id="injectEmailOnly" class="action-btn primary">Create Email Only</button>
-        <button id="logSpOnly" class="action-btn primary" style="background-color: #F79E02; border-color: #F79E02;">Log to SharePoint Only</button>
+        <button
+          id="logSpOnly"
+          class="action-btn primary"
+          style="background-color: #f79e02; border-color: #f79e02"
+        >
+          Log to SharePoint Only
+        </button>
         <button id="injectAndLog" class="action-btn primary">Construct Email & Log SP</button>
       </div>
 
