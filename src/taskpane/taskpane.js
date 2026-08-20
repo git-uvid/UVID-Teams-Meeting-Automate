@@ -62,6 +62,7 @@ Office.onReady(() => {
 
   // Fetch projects on load
   fetchProjects();
+  fetchTimezones();
 });
 
 function calculateEndTime() {
@@ -667,3 +668,74 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+
+async function fetchTimezones() {
+  const newTzSelect = document.getElementById("timezone");
+  const editTzSelect = document.getElementById("timezoneEdit");
+  if (!newTzSelect || !editTzSelect) return;
+
+  try {
+    const token = await getAccessToken();
+    const siteId = "key65akcdgsfg2zhwxauifkam1a.sharepoint.com";
+    const listId = "a7c59750-ef7f-4395-bdba-e65dd47f2a90";
+
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: Bearer ,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(Failed to fetch time zones: );
+    }
+
+    const data = await response.json();
+
+    newTzSelect.innerHTML = "";
+    editTzSelect.innerHTML = "";
+
+    if (data.value && data.value.length > 0) {
+      data.value.forEach((item) => {
+        if (item.fields.Active === true || String(item.fields.Active).toLowerCase() === "true" || item.fields.Active === 1) {
+          const tzText = item.fields.TimeZone || "Unknown";
+          const newTzVal = item.fields.TeamsTimeZone || tzText;
+          const editTzVal = item.fields.CalenderTimeZone || tzText;
+
+          const newOption = document.createElement("option");
+          newOption.value = newTzVal;
+          newOption.text = tzText;
+          newTzSelect.appendChild(newOption);
+
+          const editOption = document.createElement("option");
+          editOption.value = editTzVal;
+          editOption.text = tzText;
+          editTzSelect.appendChild(editOption);
+        }
+      });
+      
+      // Fallback if none active
+      if (newTzSelect.options.length === 0) {
+        newTzSelect.innerHTML = '<option value="">No active time zones</option>';
+        editTzSelect.innerHTML = '<option value="">No active time zones</option>';
+      }
+    } else {
+      newTzSelect.innerHTML = '<option value="">No time zones found</option>';
+      editTzSelect.innerHTML = '<option value="">No time zones found</option>';
+    }
+  } catch (error) {
+    console.error("Error fetching time zones:", error);
+    if (error.message === "Interaction required" || error.name === "BrowserAuthError" || String(error).includes("popup_window_error")) {
+      newTzSelect.innerHTML = '<option value="">Sign in required</option>';
+      editTzSelect.innerHTML = '<option value="">Sign in required</option>';
+    } else {
+      newTzSelect.innerHTML = '<option value="">Error loading time zones</option>';
+      editTzSelect.innerHTML = '<option value="">Error loading time zones</option>';
+    }
+  }
+}
