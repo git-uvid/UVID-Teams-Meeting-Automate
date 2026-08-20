@@ -692,7 +692,7 @@ async function fetchTimezones() {
     );
 
     if (!response.ok) {
-      throw new Error(Failed to fetch time zones: );
+      throw new Error(`Failed to fetch time zones: ${await response.text()}`);
     }
 
     const data = await response.json();
