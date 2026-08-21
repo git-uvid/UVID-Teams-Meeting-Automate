@@ -467,7 +467,7 @@ async function logToSharePoint(action, activeTab) {
   }
 }
 
-async function getAccessToken() {
+async function getAccessToken(interactive = false) {
   const msalConfig = {
     auth: {
       clientId: "aae90a8e-999d-4b18-ba63-f9abfb54ee68",
@@ -733,9 +733,25 @@ async function fetchTimezones() {
     if (error.message === "Interaction required" || error.name === "BrowserAuthError" || String(error).includes("popup_window_error")) {
       newTzSelect.innerHTML = '<option value="">Sign in required</option>';
       editTzSelect.innerHTML = '<option value="">Sign in required</option>';
+      const authContainer = document.getElementById("authContainer");
+      if (authContainer) authContainer.style.display = "block";
     } else {
       newTzSelect.innerHTML = '<option value="">Error loading time zones</option>';
       editTzSelect.innerHTML = '<option value="">Error loading time zones</option>';
     }
+  }
+}
+
+async function authenticateUser() {
+  try {
+    await getAccessToken(true);
+    const authContainer = document.getElementById("authContainer");
+    if (authContainer) authContainer.style.display = "none";
+    
+    // Refresh dropdowns
+    fetchProjects();
+    fetchTimezones();
+  } catch (error) {
+    console.error("Authentication failed:", error);
   }
 }
