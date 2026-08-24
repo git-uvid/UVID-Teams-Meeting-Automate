@@ -16,7 +16,7 @@
     "npm": ">=9 <12"
   },
   "scripts": {
-    "deploy": "gh-pages -d dist -u \"git <git@uvidconsulting.com>\"",
+    "deploy": "npm run build && gh-pages -d dist -u \"git <git@uvidconsulting.com>\"",
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development",
     "convert-to-single-host": "node convertToSingleHost.js",
