@@ -458,106 +458,109 @@
         <!-- ==============================================
              EDIT MEETING TAB
              ============================================== -->
-        <div id="editMeetingContainer" style="display: none">
-          <div
-            class="form-group section-box"
-            style="
-              background-color: #ffffff;
-              border: 1px solid #315eff;
-              border-left: 4px solid #315eff;
-            "
-          >
-            <label for="flowAction">Flow Action (Select what you want to do)</label>
-            <select id="flowAction">
-              <option value="Reschedule Meeting">Reschedule Meeting</option>
-              <option value="Reschedule Series">Reschedule Series</option>
-              <option value="Cancel Meeting">Cancel Meeting</option>
-              <option value="Cancel Series">Cancel Series</option>
-              <option value="Add Participant">Add Participant</option>
-              <option value="Update Meeting">Update Meeting (Change Title)</option>
-            </select>
-            <span class="help-text"
-              >This automatically sets the email subject to trigger Power Automate.</span
-            >
-          </div>
+        <div id="editMeetingContainer" style="display: none; position: relative;">
+          <!-- Cancel Button -->
+          <button id="btnCancelEdit" class="action-btn secondary" style="position: absolute; top: 0; right: 0; width: auto; padding: 4px 8px; font-size: 12px; display: none;">Cancel</button>
 
           <div class="form-group section-box" id="idSection">
             <label for="meetingId">Meeting ID / Series ID</label>
             <div style="display: flex; gap: 8px">
-              <input
-                type="text"
-                id="meetingId"
-                placeholder="Paste ID from SharePoint or confirmation email"
-              />
-              <button
-                type="button"
-                id="btnFetchMeeting"
-                class="action-btn primary"
-                style="width: auto; padding: 8px 16px; min-width: 80px"
-              >
-                Fetch
-              </button>
+              <input type="text" id="meetingId" placeholder="Paste ID from SharePoint or confirmation email" />
+              <button type="button" id="btnFetchMeeting" class="action-btn primary" style="width: auto; padding: 8px 16px; min-width: 80px">Fetch</button>
             </div>
-            <span class="help-text">Required for updates, rescheduling, or cancelling.</span>
+            <span class="help-text">Required to fetch details for updating or cancelling.</span>
             <div id="fetchMeetingStatus" class="status" style="margin-top: 8px; font-size: 13px; text-align: left;"></div>
           </div>
 
-          <!-- RESCHEDULE FIELDS -->
-          <div id="rescheduleFields" style="display: none">
-            <div class="form-group" id="newDateSection">
-              <label for="newDate">New Date</label>
-              <input type="date" id="newDate" />
-            </div>
-            <div class="form-group" id="newDaySection" style="display: none">
-              <label for="newDay">New Day</label>
-              <select id="newDay">
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
+          <div id="editMeetingForm" style="display: none;">
+            <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315eff; border-left: 4px solid #315eff;">
+              <label for="flowActionEdit">Flow Action (Select what you want to do)</label>
+              <select id="flowActionEdit">
+                <option value="Update Meeting Details">Update Meeting Details</option>
+                <option value="Reschedule Meeting">Reschedule Meeting</option>
+                <option value="Cancel Meeting">Cancel Meeting</option>
+                <option value="Reschedule Series">Reschedule Series</option>
+                <option value="Cancel Series">Cancel Series</option>
+                <option value="Add Participant">Add Participant</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="newTime">New Time</label>
-              <input type="time" id="newTime" />
-            </div>
-          </div>
 
-          <!-- REASON FIELD (Used in Reschedule and Cancel) -->
-          <div id="reasonField" style="display: none">
-            <div class="form-group">
-              <label for="reason">Reason (Optional)</label>
-              <input type="text" id="reason" placeholder="e.g. Client requested change" />
+            <!-- Recurrence Idea Fields (Hidden by default, used for Power Automate list logic) -->
+            <div id="recurrenceEditSection" class="form-group section-box" style="display: none; border-left: 4px solid #f79e02; background: #fffdf5;">
+              <label>Recurrence Instance Edit</label>
+              <span class="help-text" style="margin-bottom: 8px;">To edit a specific occurrence, provide the Master ID and Instance ID. Power Automate will use these to modify just that event.</span>
+              <div class="form-group">
+                <label for="masterEventId">Master Event ID</label>
+                <input type="text" id="masterEventId" placeholder="ID of the recurring series" />
+              </div>
+              <div class="form-group">
+                <label for="recurrenceInstanceId">Recurrence Event ID</label>
+                <input type="text" id="recurrenceInstanceId" placeholder="ID of the specific occurrence" />
+              </div>
             </div>
-          </div>
 
-          <!-- ADD PARTICIPANT FIELDS -->
-          <div id="addParticipantFields" style="display: none">
             <div class="form-group">
-              <label for="newParticipantEmail">New Participant Email</label>
-              <input type="text" id="newParticipantEmail" class="email-input" />
-              <div class="error-text">Invalid email.</div>
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editTitle">Meeting Title</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editTitle">Edit</button>
+              </div>
+              <input type="text" id="editTitle" disabled />
             </div>
-            <div class="form-group">
-              <label for="newParticipantName">Name (Optional)</label>
-              <input type="text" id="newParticipantName" />
-            </div>
-          </div>
 
-          <!-- UPDATE TITLE FIELDS -->
-          <div id="updateTitleFields" style="display: none">
             <div class="form-group">
-              <label for="newTitle">New Title</label>
-              <input type="text" id="newTitle" />
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editDate">Date</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editDate">Edit</button>
+              </div>
+              <input type="date" id="editDate" disabled />
             </div>
-          </div>
 
-          <div class="form-group" id="timezoneFieldShared" style="display: none">
-            <label for="timezoneEdit">Timezone</label>
-            <select id="timezoneEdit">
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editTime">Start Time</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editTime">Edit</button>
+              </div>
+              <input type="time" id="editTime" disabled />
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editDuration">Duration (minutes)</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editDuration">Edit</button>
+              </div>
+              <input type="number" id="editDuration" disabled />
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editTimezone">Timezone</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editTimezone">Edit</button>
+              </div>
+              <select id="editTimezone" disabled>
                 <option value="">Loading time zones...</option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editRequiredAttendees">Required Attendees</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editRequiredAttendees">Edit</button>
+              </div>
+              <textarea id="editRequiredAttendees" disabled placeholder="Emails..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="editReason">Reason (For changes/cancellation)</label>
+                <button type="button" class="small-btn btn-unlock" data-target="editReason">Edit</button>
+              </div>
+              <input type="text" id="editReason" disabled placeholder="e.g. Client requested change" />
+            </div>
+
+            <div class="form-group">
+              <label for="triggeredBy">Triggered By</label>
+              <input type="text" id="triggeredBy" readonly style="background-color: #f3f2f1" />
+            </div>
           </div>
         </div>
         <!-- END EDIT MEETING -->

@@ -24,6 +24,28 @@ Office.onReady(() => {
     genBy.value = userEmail;
   }
 
+  document.getElementById("signInBtn")?.addEventListener("click", authenticateUser);
+
+  document.getElementById("btnCancelEdit")?.addEventListener("click", () => {
+    document.getElementById("editMeetingForm").style.display = "none";
+    document.getElementById("idSection").style.display = "block";
+    document.getElementById("btnCancelEdit").style.display = "none";
+    document.getElementById("fetchMeetingStatus").innerText = "";
+  });
+
+  document.querySelectorAll(".btn-unlock").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const targetId = e.target.getAttribute("data-target");
+      if (targetId) {
+        const inputEl = document.getElementById(targetId);
+        if (inputEl) {
+          inputEl.disabled = false;
+          inputEl.focus();
+        }
+      }
+    });
+  });
+
   // Listeners for Tab Navigation
   const tabs = document.querySelectorAll('input[name="tabNav"]');
   tabs.forEach((tab) => {
@@ -31,7 +53,6 @@ Office.onReady(() => {
   });
 
   document.getElementById("flowActionNew")?.addEventListener("change", handleActionChangeNew);
-  document.getElementById("flowAction")?.addEventListener("change", handleActionChangeEdit);
 
   document.getElementById("startTime")?.addEventListener("change", calculateEndTime);
   document.getElementById("duration")?.addEventListener("input", calculateEndTime);
@@ -53,9 +74,7 @@ Office.onReady(() => {
     .getElementById("injectAndLog")
     ?.addEventListener("click", () => handleSubmission(true, true));
 
-  document
-    .getElementById("btnFetchMeeting")
-    ?.addEventListener("click", fetchMeetingDetails);
+  document.getElementById("btnFetchMeeting")?.addEventListener("click", fetchMeetingDetails);
 
   // Initial setup
   handleTabChange();
@@ -99,7 +118,6 @@ function handleTabChange() {
   } else {
     document.getElementById("newMeetingContainer").style.display = "none";
     document.getElementById("editMeetingContainer").style.display = "block";
-    handleActionChangeEdit();
   }
 }
 
@@ -109,37 +127,6 @@ function handleActionChangeNew() {
     document.getElementById("recurringFields").style.display = "block";
   } else {
     document.getElementById("recurringFields").style.display = "none";
-  }
-}
-
-function handleActionChangeEdit() {
-  const action = document.getElementById("flowAction").value;
-
-  // Hide edit sections first
-  document.getElementById("rescheduleFields").style.display = "none";
-  document.getElementById("reasonField").style.display = "none";
-  document.getElementById("addParticipantFields").style.display = "none";
-  document.getElementById("updateTitleFields").style.display = "none";
-  document.getElementById("timezoneFieldShared").style.display = "none";
-  document.getElementById("newDateSection").style.display = "none";
-  document.getElementById("newDaySection").style.display = "none";
-
-  if (action === "Reschedule Meeting") {
-    document.getElementById("rescheduleFields").style.display = "block";
-    document.getElementById("newDateSection").style.display = "block";
-    document.getElementById("reasonField").style.display = "block";
-    document.getElementById("timezoneFieldShared").style.display = "block";
-  } else if (action === "Reschedule Series") {
-    document.getElementById("rescheduleFields").style.display = "block";
-    document.getElementById("newDaySection").style.display = "block";
-    document.getElementById("reasonField").style.display = "block";
-    document.getElementById("timezoneFieldShared").style.display = "block";
-  } else if (action === "Cancel Meeting" || action === "Cancel Series") {
-    document.getElementById("reasonField").style.display = "block";
-  } else if (action === "Add Participant") {
-    document.getElementById("addParticipantFields").style.display = "block";
-  } else if (action === "Update Meeting") {
-    document.getElementById("updateTitleFields").style.display = "block";
   }
 }
 
@@ -439,14 +426,46 @@ async function logToSharePoint(action, activeTab) {
       },
     };
   } else {
-    // Edit mode: we just log a basic record or we would ideally update the SP item, but for now we push a log row
-    payload = {
-      fields: {
-        Title: document.getElementById("newTitle")?.value || action,
-        MeetingID: document.getElementById("meetingId")?.value || "",
-        SeriesID: document.getElementById("meetingId")?.value || "",
-      },
+    // Edit mode: construct payload ONLY with modified (unlocked) fields
+    payload = { fields: {} };
+
+    payload.fields.MeetingID = document.getElementById("meetingId")?.value || "";
+    payload.fields.SeriesID =
+      document.getElementById("masterEventId")?.value ||
+      document.getElementById("meetingId")?.value ||
+      "";
+    payload.fields.MeetingSubject = document.getElementById("flowActionEdit")?.value || action;
+    payload.fields.GeneratedBy = document.getElementById("triggeredBy")?.value || "Unknown";
+
+    const getIfUnlocked = (id) => {
+      const el = document.getElementById(id);
+      return el && !el.disabled ? el.value : undefined;
     };
+
+    const title = getIfUnlocked("editTitle");
+    if (title !== undefined) payload.fields.Title = title;
+
+    const tz = getIfUnlocked("editTimezone");
+    if (tz !== undefined) payload.fields.Timezone = tz;
+
+    const duration = getIfUnlocked("editDuration");
+    if (duration !== undefined)
+      payload.fields.Duration_x0028_minutes_x0029_ = parseInt(duration) || 0;
+
+    const attendees = getIfUnlocked("editRequiredAttendees");
+    if (attendees !== undefined)
+      payload.fields.Requiredattendees = attendees.replace(/[\s,]+/g, ";");
+
+    const reason = getIfUnlocked("editReason");
+    if (reason !== undefined) payload.fields.MeetingEventmessagecontent = "Reason: " + reason;
+
+    const dateStr = getIfUnlocked("editDate");
+    const timeStr = getIfUnlocked("editTime");
+    if (dateStr !== undefined || timeStr !== undefined) {
+      const d = document.getElementById("editDate")?.value;
+      const t = document.getElementById("editTime")?.value;
+      if (d && t) payload.fields.Starttime = d + "T" + t + ":00Z";
+    }
   }
 
   const response = await fetch(
@@ -467,32 +486,43 @@ async function logToSharePoint(action, activeTab) {
   }
 }
 
-async function getAccessToken(interactive = false) {
-  const msalConfig = {
-    auth: {
-      clientId: "aae90a8e-999d-4b18-ba63-f9abfb54ee68",
-      authority: "https://login.microsoftonline.com/bcbce4e4-0e70-42c4-bf70-cf41ea55f075",
-      redirectUri: "https://git-uvid.github.io/UVID-Teams-Meeting-Automate/taskpane.html",
-    },
-  };
-  const msalInstance = new msal.PublicClientApplication(msalConfig);
-  await msalInstance.initialize();
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0) {
-    const request = { scopes: ["Sites.ReadWrite.All"], account: accounts[0] };
-    try {
-      const response = await msalInstance.acquireTokenSilent(request);
-      return response.accessToken;
-    } catch (e) {
-      console.warn("Silent token acquisition failed. Falling back to popup.", e);
-      const response = await msalInstance.acquireTokenPopup(request);
-      return response.accessToken;
-    }
-  } else {
-    const request = { scopes: ["Sites.ReadWrite.All"] };
-    const response = await msalInstance.acquireTokenPopup(request);
-    return response.accessToken;
+let msalInstance;
+
+async function initMsal() {
+  if (!msalInstance) {
+    const msalConfig = {
+      auth: {
+        clientId: "aae90a8e-999d-4b18-ba63-f9abfb54ee68",
+        authority: "https://login.microsoftonline.com/bcbce4e4-0e70-42c4-bf70-cf41ea55f075",
+        redirectUri: window.location.href.split("?")[0].split("#")[0],
+      },
+    };
+    msalInstance = new msal.PublicClientApplication(msalConfig);
+    await msalInstance.initialize();
   }
+}
+
+async function getAccessToken(interactive = false) {
+  await initMsal();
+  const accounts = msalInstance.getAllAccounts();
+  const request = { scopes: ["Sites.ReadWrite.All"] };
+
+  if (accounts.length > 0) {
+    request.account = accounts[0];
+    if (!interactive) {
+      try {
+        const response = await msalInstance.acquireTokenSilent(request);
+        return response.accessToken;
+      } catch (e) {
+        console.warn("Silent token acquisition failed.", e);
+        throw e;
+      }
+    }
+  }
+
+  // If interactive is true OR no accounts exist yet, prompt popup
+  const response = await msalInstance.acquireTokenPopup(request);
+  return response.accessToken;
 }
 
 async function fetchProjects() {
@@ -527,7 +557,11 @@ async function fetchProjects() {
     if (data.value && data.value.length > 0) {
       data.value.forEach((item) => {
         // Skip completed projects
-        if (item.fields.IsCompleted === true || String(item.fields.IsCompleted).toLowerCase() === "true" || item.fields.IsCompleted === 1) {
+        if (
+          item.fields.IsCompleted === true ||
+          String(item.fields.IsCompleted).toLowerCase() === "true" ||
+          item.fields.IsCompleted === 1
+        ) {
           return;
         }
 
@@ -592,39 +626,75 @@ async function fetchMeetingDetails() {
 
     if (data.value && data.value.length > 0) {
       const itemFields = data.value[0].fields;
-      
-      // Update status message
+
       if (statusEl) {
-        statusEl.innerText = `Found: ${itemFields.Title || "Untitled"} | Project: ${itemFields.Project || "Unknown"} | Status: ${itemFields.MeetingStatus || "Unknown"}`;
+        statusEl.innerText = `Found: ${itemFields.Title || "Untitled"}`;
         statusEl.style.color = "green";
       }
 
-      // Auto-populate relevant fields if they exist
-      const newTitleEl = document.getElementById("newTitle");
-      if (newTitleEl) newTitleEl.value = itemFields.Title || "";
+      const idSection = document.getElementById("idSection");
+      const editMeetingForm = document.getElementById("editMeetingForm");
+      const btnCancelEdit = document.getElementById("btnCancelEdit");
+      if (idSection) idSection.style.display = "none";
+      if (editMeetingForm) editMeetingForm.style.display = "block";
+      if (btnCancelEdit) btnCancelEdit.style.display = "block";
 
-      // Populate Start Date and Time from Starttime if available
+      document
+        .querySelectorAll(
+          "#editMeetingForm input, #editMeetingForm select, #editMeetingForm textarea"
+        )
+        .forEach((el) => {
+          if (
+            el.id !== "flowActionEdit" &&
+            el.id !== "triggeredBy" &&
+            el.id !== "masterEventId" &&
+            el.id !== "recurrenceInstanceId"
+          ) {
+            el.disabled = true;
+          }
+        });
+
+      const trig = document.getElementById("triggeredBy");
+      if (trig) trig.value = userEmail;
+
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+      };
+
+      setVal("editTitle", itemFields.Title);
+      setVal("editDuration", itemFields.Duration_x0028_minutes_x0029_ || itemFields.Duration || "");
+      setVal("editTimezone", itemFields.Timezone);
+      setVal(
+        "editRequiredAttendees",
+        itemFields.Requiredattendees ? itemFields.Requiredattendees.replace(/;/g, "\n") : ""
+      );
+
       if (itemFields.Starttime) {
-        // e.g. "2026-07-29T11:05:00Z"
         const startDateStr = itemFields.Starttime.split("T")[0];
         let startTimeStr = itemFields.Starttime.split("T")[1];
-        if (startTimeStr) {
-          startTimeStr = startTimeStr.substring(0, 5); // "HH:MM"
-        }
-        
-        const newDateEl = document.getElementById("newDate");
-        if (newDateEl) newDateEl.value = startDateStr;
-        
-        const newTimeEl = document.getElementById("newTime");
-        if (newTimeEl) newTimeEl.value = startTimeStr || "";
+        if (startTimeStr) startTimeStr = startTimeStr.substring(0, 5);
+        setVal("editDate", startDateStr);
+        setVal("editTime", startTimeStr);
+      } else {
+        setVal("editDate", "");
+        setVal("editTime", "");
       }
 
-      // Populate timezone if available
-      if (itemFields.Timezone) {
-        const tzEl = document.getElementById("timezoneEdit");
-        if (tzEl) tzEl.value = itemFields.Timezone;
+      if (
+        itemFields.Recurring === true ||
+        String(itemFields.Recurring).toLowerCase() === "true" ||
+        itemFields.Recurring === 1
+      ) {
+        const recSection = document.getElementById("recurrenceEditSection");
+        if (recSection) recSection.style.display = "block";
+        setVal("masterEventId", itemFields.MeetingID || "");
+      } else {
+        const recSection = document.getElementById("recurrenceEditSection");
+        if (recSection) recSection.style.display = "none";
+        setVal("masterEventId", "");
+        setVal("recurrenceInstanceId", "");
       }
-
     } else {
       if (statusEl) {
         statusEl.innerText = "Meeting ID not found in SharePoint.";
@@ -669,10 +739,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-
 async function fetchTimezones() {
   const newTzSelect = document.getElementById("timezone");
-  const editTzSelect = document.getElementById("timezoneEdit");
+  const editTzSelect = document.getElementById("editTimezone");
   if (!newTzSelect || !editTzSelect) return;
 
   try {
@@ -685,7 +754,7 @@ async function fetchTimezones() {
       {
         method: "GET",
         headers: {
-          Authorization: Bearer ,
+          Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
       }
@@ -702,7 +771,11 @@ async function fetchTimezones() {
 
     if (data.value && data.value.length > 0) {
       data.value.forEach((item) => {
-        if (item.fields.Active === true || String(item.fields.Active).toLowerCase() === "true" || item.fields.Active === 1) {
+        if (
+          item.fields.Active === true ||
+          String(item.fields.Active).toLowerCase() === "true" ||
+          item.fields.Active === 1
+        ) {
           const tzText = item.fields.TimeZone || "Unknown";
           const newTzVal = item.fields.TeamsTimeZone || tzText;
           const editTzVal = item.fields.CalenderTimeZone || tzText;
@@ -718,7 +791,7 @@ async function fetchTimezones() {
           editTzSelect.appendChild(editOption);
         }
       });
-      
+
       // Fallback if none active
       if (newTzSelect.options.length === 0) {
         newTzSelect.innerHTML = '<option value="">No active time zones</option>';
@@ -730,7 +803,11 @@ async function fetchTimezones() {
     }
   } catch (error) {
     console.error("Error fetching time zones:", error);
-    if (error.message === "Interaction required" || error.name === "BrowserAuthError" || String(error).includes("popup_window_error")) {
+    if (
+      error.message === "Interaction required" ||
+      error.name === "BrowserAuthError" ||
+      String(error).includes("popup_window_error")
+    ) {
       newTzSelect.innerHTML = '<option value="">Sign in required</option>';
       editTzSelect.innerHTML = '<option value="">Sign in required</option>';
       const authContainer = document.getElementById("authContainer");
@@ -747,7 +824,7 @@ async function authenticateUser() {
     await getAccessToken(true);
     const authContainer = document.getElementById("authContainer");
     if (authContainer) authContainer.style.display = "none";
-    
+
     // Refresh dropdowns
     fetchProjects();
     fetchTimezones();
