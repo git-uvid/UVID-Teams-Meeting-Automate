@@ -388,14 +388,14 @@ async function logToSharePoint(action, activeTab) {
     let startTimeVal = document.getElementById("startTime").value; // HH:MM
     let startIso = "";
     if (startDateVal && startTimeVal) {
-      startIso = startDateVal + "T" + startTimeVal + ":00Z"; // Rough approximation, real SP expects ISO
+      startIso = startDateVal + "T" + startTimeVal + ":00"; // Real SP expects ISO, omitting Z uses site local time
     }
 
     let endDateVal = document.getElementById("startDate").value; // Assuming same day
     let endTimeVal = document.getElementById("endTime").value;
     let endIso = "";
     if (endDateVal && endTimeVal) {
-      endIso = endDateVal + "T" + endTimeVal + ":00Z";
+      endIso = endDateVal + "T" + endTimeVal + ":00";
     }
 
     payload = {
@@ -429,11 +429,11 @@ async function logToSharePoint(action, activeTab) {
           : 0,
         Recurrencestartdate:
           isRecurring && document.getElementById("recurrenceStartDate")?.value
-            ? document.getElementById("recurrenceStartDate").value + "T00:00:00Z"
+            ? document.getElementById("recurrenceStartDate").value + "T00:00:00"
             : null,
         Recurrenceenddate:
           isRecurring && document.getElementById("recurrenceEndDate")?.value
-            ? document.getElementById("recurrenceEndDate").value + "T00:00:00Z"
+            ? document.getElementById("recurrenceEndDate").value + "T00:00:00"
             : null,
         Starttime: startIso || null,
         Endtime: endIso || null,
