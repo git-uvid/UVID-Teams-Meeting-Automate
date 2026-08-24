@@ -130,6 +130,13 @@ function handleActionChangeNew() {
   }
 }
 
+document.getElementById("recurrenceFrequency")?.addEventListener("change", (e) => {
+  const daysSection = document.getElementById("selectedDaysOfWeekSection");
+  if (daysSection) {
+    daysSection.style.display = e.target.value === "Weekly" ? "block" : "none";
+  }
+});
+
 // Function to format date to "15 July 2026"
 function formatDateText(dateStr) {
   if (!dateStr) return "";
@@ -409,6 +416,14 @@ async function logToSharePoint(action, activeTab) {
           document.getElementById("optionalAttendees")?.value.replace(/[\s,]+/g, ";") || "",
         Recurring: isRecurring,
         Recurrencepattern: isRecurring ? document.getElementById("recurrenceFrequency")?.value : "",
+        SelectedDaysOfWeek:
+          isRecurring && document.getElementById("recurrenceFrequency")?.value === "Weekly"
+            ? JSON.stringify(
+                Array.from(document.querySelectorAll('input[name="recurrenceDays"]:checked')).map(
+                  (cb) => cb.value
+                )
+              )
+            : "[]",
         Recurrenceinterval: isRecurring
           ? parseInt(document.getElementById("recurrenceInterval")?.value) || 1
           : 0,
