@@ -810,11 +810,10 @@ async function fetchTimezones() {
           item.fields.Active === 1
         ) {
           const tzText = item.fields.TimeZone || "Unknown";
-          const newTzVal = item.fields.TeamsTimeZone || tzText;
-          const editTzVal = item.fields.CalenderTimeZone || tzText;
+          const calTzVal = item.fields.CalenderTimeZone || tzText;
 
-          newTzSelect.options.add(new Option(tzText, newTzVal));
-          editTzSelect.options.add(new Option(tzText, editTzVal));
+          newTzSelect.options.add(new Option(tzText, calTzVal));
+          editTzSelect.options.add(new Option(tzText, calTzVal));
         }
       });
 
