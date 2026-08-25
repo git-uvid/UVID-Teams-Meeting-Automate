@@ -533,6 +533,12 @@ async function getAccessToken(interactive = false) {
         throw e;
       }
     }
+  } else {
+    if (!interactive) {
+      const err = new Error("Interaction required");
+      err.name = "InteractionRequiredAuthError";
+      throw err;
+    }
   }
 
   // If interactive is true OR no accounts exist yet, prompt popup
@@ -566,8 +572,9 @@ async function fetchProjects() {
 
     const data = await response.json();
 
-    // Clear existing options
-    projectSelect.innerHTML = '<option value="">Select a Project</option>';
+    // Clear existing options safely
+    projectSelect.options.length = 0;
+    projectSelect.options.add(new Option("Select a Project", ""));
 
     if (data.value && data.value.length > 0) {
       data.value.forEach((item) => {
@@ -582,18 +589,29 @@ async function fetchProjects() {
 
         const title = item.fields.Title || item.fields.ProjectName;
         if (title) {
-          const option = document.createElement("option");
-          option.value = title;
-          option.text = title;
-          projectSelect.appendChild(option);
+          projectSelect.options.add(new Option(title, title));
         }
       });
     } else {
-      projectSelect.innerHTML = '<option value="">No projects found</option>';
+      projectSelect.options.length = 0;
+      projectSelect.options.add(new Option("No projects found", ""));
     }
   } catch (error) {
     console.error("Error fetching projects:", error);
-    projectSelect.innerHTML = '<option value="">Error loading projects</option>';
+    projectSelect.options.length = 0;
+    if (
+      error.message === "Interaction required" ||
+      error.name === "BrowserAuthError" ||
+      error.name === "InteractionRequiredAuthError" ||
+      String(error).includes("popup_window_error") ||
+      String(error).includes("interaction_in_progress")
+    ) {
+      projectSelect.options.add(new Option("Sign in required", ""));
+      const authContainer = document.getElementById("authContainer");
+      if (authContainer) authContainer.style.display = "block";
+    } else {
+      projectSelect.options.add(new Option("Error loading projects", ""));
+    }
   }
 }
 
@@ -781,8 +799,8 @@ async function fetchTimezones() {
 
     const data = await response.json();
 
-    newTzSelect.innerHTML = "";
-    editTzSelect.innerHTML = "";
+    newTzSelect.options.length = 0;
+    editTzSelect.options.length = 0;
 
     if (data.value && data.value.length > 0) {
       data.value.forEach((item) => {
@@ -795,41 +813,38 @@ async function fetchTimezones() {
           const newTzVal = item.fields.TeamsTimeZone || tzText;
           const editTzVal = item.fields.CalenderTimeZone || tzText;
 
-          const newOption = document.createElement("option");
-          newOption.value = newTzVal;
-          newOption.text = tzText;
-          newTzSelect.appendChild(newOption);
-
-          const editOption = document.createElement("option");
-          editOption.value = editTzVal;
-          editOption.text = tzText;
-          editTzSelect.appendChild(editOption);
+          newTzSelect.options.add(new Option(tzText, newTzVal));
+          editTzSelect.options.add(new Option(tzText, editTzVal));
         }
       });
 
       // Fallback if none active
       if (newTzSelect.options.length === 0) {
-        newTzSelect.innerHTML = '<option value="">No active time zones</option>';
-        editTzSelect.innerHTML = '<option value="">No active time zones</option>';
+        newTzSelect.options.add(new Option("No active time zones", ""));
+        editTzSelect.options.add(new Option("No active time zones", ""));
       }
     } else {
-      newTzSelect.innerHTML = '<option value="">No time zones found</option>';
-      editTzSelect.innerHTML = '<option value="">No time zones found</option>';
+      newTzSelect.options.add(new Option("No time zones found", ""));
+      editTzSelect.options.add(new Option("No time zones found", ""));
     }
   } catch (error) {
     console.error("Error fetching time zones:", error);
+    newTzSelect.options.length = 0;
+    editTzSelect.options.length = 0;
     if (
       error.message === "Interaction required" ||
       error.name === "BrowserAuthError" ||
-      String(error).includes("popup_window_error")
+      error.name === "InteractionRequiredAuthError" ||
+      String(error).includes("popup_window_error") ||
+      String(error).includes("interaction_in_progress")
     ) {
-      newTzSelect.innerHTML = '<option value="">Sign in required</option>';
-      editTzSelect.innerHTML = '<option value="">Sign in required</option>';
+      newTzSelect.options.add(new Option("Sign in required", ""));
+      editTzSelect.options.add(new Option("Sign in required", ""));
       const authContainer = document.getElementById("authContainer");
       if (authContainer) authContainer.style.display = "block";
     } else {
-      newTzSelect.innerHTML = '<option value="">Error loading time zones</option>';
-      editTzSelect.innerHTML = '<option value="">Error loading time zones</option>';
+      newTzSelect.options.add(new Option("Error loading time zones", ""));
+      editTzSelect.options.add(new Option("Error loading time zones", ""));
     }
   }
 }
