@@ -1,5 +1,5 @@
 /* eslint-env browser, es2022 */
-/* global Office, console, msal, document, window, fetch */
+/* global Office, console, msal, document, window, fetch, Option */
 
 /*
  * UVID Teams Meeting Automate - Taskpane Logic
@@ -75,6 +75,10 @@ Office.onReady(() => {
     ?.addEventListener("click", () => handleSubmission(true, true));
 
   document.getElementById("btnFetchMeeting")?.addEventListener("click", fetchMeetingDetails);
+  document
+    .getElementById("btnExtractEmail")
+    ?.addEventListener("click", extractEmailAndAddToAttendees);
+  document.getElementById("senderEmail")?.addEventListener("change", extractEmailAndAddToAttendees);
 
   // Initial setup
   handleTabChange();
@@ -137,6 +141,29 @@ document.getElementById("recurrenceFrequency")?.addEventListener("change", (e) =
   }
 });
 
+function extractEmailAndAddToAttendees() {
+  const senderEmailEl = document.getElementById("senderEmail");
+  const reqAttendeesEl = document.getElementById("requiredAttendees");
+  if (!senderEmailEl) return;
+
+  const val = senderEmailEl.value;
+  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/i;
+  const match = val.match(emailRegex);
+
+  if (match) {
+    const extractedEmail = match[1];
+    senderEmailEl.value = extractedEmail;
+
+    if (reqAttendeesEl) {
+      let currentEmails = reqAttendeesEl.value.split(/[\s,;]+/).filter(Boolean);
+      if (!currentEmails.includes(extractedEmail)) {
+        currentEmails.push(extractedEmail);
+        reqAttendeesEl.value = currentEmails.join(";\n");
+      }
+    }
+  }
+}
+
 // Function to format date to "15 July 2026"
 function formatDateText(dateStr) {
   if (!dateStr) return "";
@@ -188,174 +215,175 @@ async function handleSubmission(doEmail, doSP) {
   let emailBody = "";
 
   if (activeTab === "newMeeting") {
-  if (action === "Schedule Meeting") {
-    const title = escapeHtml(document.getElementById("meetingTitle").value);
-    const subject = escapeHtml(document.getElementById("meetingSubject").value);
-    const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(
-      /\n/g,
-      "<br>"
-    );
-    const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
-    const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
-    const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
-    const duration = escapeHtml(document.getElementById("duration").value);
-    const reqAttendees = escapeHtml(
-      document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ";")
-    );
-    const optAttendees = escapeHtml(
-      document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ";")
-    );
-    const type = escapeHtml(document.getElementById("meetingType").value);
-    const timezone = escapeHtml(document.getElementById("timezone").value);
-
-    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Timezone: ${timezone}`;
-  } else if (action === "Schedule Recurring Meeting") {
-    const title = escapeHtml(document.getElementById("meetingTitle").value);
-    const subject = escapeHtml(document.getElementById("meetingSubject").value);
-    const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(
-      /\n/g,
-      "<br>"
-    );
-    const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
-    const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
-    const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
-    const duration = escapeHtml(document.getElementById("duration").value);
-    const reqAttendees = escapeHtml(
-      document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ";")
-    );
-    const optAttendees = escapeHtml(
-      document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ";")
-    );
-    const type = escapeHtml(document.getElementById("meetingType").value);
-    const timezone = escapeHtml(document.getElementById("timezone").value);
-    const freq = escapeHtml(document.getElementById("recurrenceFrequency").value);
-    const recurStartDate = escapeHtml(
-      formatDateText(document.getElementById("recurrenceStartDate").value)
-    );
-    const recurEndDate = escapeHtml(
-      formatDateText(document.getElementById("recurrenceEndDate").value)
-    );
-
-    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
-  } else if (action === "Reschedule Meeting") {
-    const id = escapeHtml(document.getElementById("meetingId").value);
-    const date = escapeHtml(formatDateText(document.getElementById("newDate").value));
-    const time = escapeHtml(formatTimeText(document.getElementById("newTime").value));
-    const timezone = escapeHtml(document.getElementById("timezoneEdit").value);
-    const reason = escapeHtml(document.getElementById("reason").value);
-
-    emailBody = `Meeting ID: ${id}<br>New Date: ${date}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
-  } else if (action === "Reschedule Series") {
-    const id = escapeHtml(document.getElementById("meetingId").value);
-    const day = escapeHtml(document.getElementById("newDay").value);
-    const time = escapeHtml(formatTimeText(document.getElementById("newTime").value));
-    const timezone = escapeHtml(document.getElementById("timezoneEdit").value);
-    const reason = escapeHtml(document.getElementById("reason").value);
-
-    emailBody = `Series ID: ${id}<br>New Day: ${day}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
-  } else if (action === "Cancel Meeting") {
-    const id = escapeHtml(document.getElementById("meetingId").value);
-    const reason = escapeHtml(document.getElementById("reason").value);
-
-    emailBody = `Meeting ID: ${id}<br>Reason: ${reason}`;
-  } else if (action === "Cancel Series") {
-    const id = escapeHtml(document.getElementById("meetingId").value);
-    const reason = escapeHtml(document.getElementById("reason").value);
-
-    emailBody = `Series ID: ${id}<br>Reason: ${reason}`;
-  } else if (action === "Add Participant") {
-    const id = escapeHtml(document.getElementById("meetingId").value);
-    const newParticipant = escapeHtml(document.getElementById("newParticipantEmail").value);
-    const name = escapeHtml(document.getElementById("newParticipantName").value);
-
-    emailBody = `Meeting ID: ${id}<br>New Participant: ${newParticipant}`;
-    if (name) emailBody += `<br>Name: ${name}`;
-  } else if (action === "Update Meeting") {
-    const id = escapeHtml(document.getElementById("meetingId").value);
-    const newTitle = escapeHtml(document.getElementById("newTitle").value);
-
-    emailBody = `Meeting ID: ${id}<br>New Title: ${newTitle}`;
-  }
-
-  if (window.Office && window.Office.context && window.Office.context.mailbox) {
-    if (doEmail) {
-      statusEl.innerText = "Constructing Email...";
-      statusEl.style.color = "blue";
-
-      // Clear To, CC, BCC
-      Office.context.mailbox.item.to.setAsync(
-        [{ emailAddress: "connect@uvidconsulting.com" }],
-        (res) => {
-          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-        }
+    if (action === "Schedule Meeting") {
+      const title = escapeHtml(document.getElementById("meetingTitle").value);
+      const subject = escapeHtml(document.getElementById("meetingSubject").value);
+      const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(
+        /\n/g,
+        "<br>"
       );
-      Office.context.mailbox.item.cc.setAsync([], (res) => {
-        if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-      });
-      Office.context.mailbox.item.bcc.setAsync([], (res) => {
-        if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-      });
-
-      Office.context.mailbox.item.subject.setAsync(action, (res) => {
-        if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-      });
-
-      // Append Regards and Disclaimer
-      const name = userEmail ? userEmail.split("@")[0].replace(".", " ") : "User";
-      const capitalizedName = name.replace(/\b\w/g, (l) => l.toUpperCase());
-      const finalEmailBody =
-        emailBody +
-        `<br><br>Best regards,<br>${capitalizedName}<br><br><i>[Auto-generated email by UVID Teams Meeting Automate]</i>`;
-
-      Office.context.mailbox.item.body.setAsync(
-        finalEmailBody,
-        { coercionType: Office.CoercionType.Html },
-        async (asyncResult) => {
-          if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-            statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
-            statusEl.style.color = "red";
-            return;
-          }
-
-          if (doSP) {
-            await executeSPLog(
-              action,
-              activeTab,
-              statusEl,
-              "Success! Email populated and logged to SharePoint.",
-              "Email populated, but failed to log to SharePoint."
-            );
-          } else {
-            statusEl.innerText = "Success! Email constructed.";
-            statusEl.style.color = "green";
-          }
-        }
+      const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
+      const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
+      const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
+      const duration = escapeHtml(document.getElementById("duration").value);
+      const reqAttendees = escapeHtml(
+        document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ";")
       );
-    } else if (doSP) {
-      await executeSPLog(
-        action,
-        activeTab,
-        statusEl,
-        "Success! Logged to SharePoint.",
-        "Failed to log to SharePoint."
+      const optAttendees = escapeHtml(
+        document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ";")
       );
+      const type = escapeHtml(document.getElementById("meetingType").value);
+      const timezone = escapeHtml(document.getElementById("timezone").value);
+
+      emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Timezone: ${timezone}`;
+    } else if (action === "Schedule Recurring Meeting") {
+      const title = escapeHtml(document.getElementById("meetingTitle").value);
+      const subject = escapeHtml(document.getElementById("meetingSubject").value);
+      const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(
+        /\n/g,
+        "<br>"
+      );
+      const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
+      const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
+      const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
+      const duration = escapeHtml(document.getElementById("duration").value);
+      const reqAttendees = escapeHtml(
+        document.getElementById("requiredAttendees").value.replace(/[\s,]+/g, ";")
+      );
+      const optAttendees = escapeHtml(
+        document.getElementById("optionalAttendees").value.replace(/[\s,]+/g, ";")
+      );
+      const type = escapeHtml(document.getElementById("meetingType").value);
+      const timezone = escapeHtml(document.getElementById("timezone").value);
+      const freq = escapeHtml(document.getElementById("recurrenceFrequency").value);
+      const recurStartDate = escapeHtml(
+        formatDateText(document.getElementById("recurrenceStartDate").value)
+      );
+      const recurEndDate = escapeHtml(
+        formatDateText(document.getElementById("recurrenceEndDate").value)
+      );
+
+      emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
+    } else if (action === "Reschedule Meeting") {
+      const id = escapeHtml(document.getElementById("meetingId").value);
+      const date = escapeHtml(formatDateText(document.getElementById("newDate").value));
+      const time = escapeHtml(formatTimeText(document.getElementById("newTime").value));
+      const timezone = escapeHtml(document.getElementById("timezoneEdit").value);
+      const reason = escapeHtml(document.getElementById("reason").value);
+
+      emailBody = `Meeting ID: ${id}<br>New Date: ${date}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
+    } else if (action === "Reschedule Series") {
+      const id = escapeHtml(document.getElementById("meetingId").value);
+      const day = escapeHtml(document.getElementById("newDay").value);
+      const time = escapeHtml(formatTimeText(document.getElementById("newTime").value));
+      const timezone = escapeHtml(document.getElementById("timezoneEdit").value);
+      const reason = escapeHtml(document.getElementById("reason").value);
+
+      emailBody = `Series ID: ${id}<br>New Day: ${day}<br>New Time: ${time}<br>Timezone: ${timezone}<br>Reason: ${reason}`;
+    } else if (action === "Cancel Meeting") {
+      const id = escapeHtml(document.getElementById("meetingId").value);
+      const reason = escapeHtml(document.getElementById("reason").value);
+
+      emailBody = `Meeting ID: ${id}<br>Reason: ${reason}`;
+    } else if (action === "Cancel Series") {
+      const id = escapeHtml(document.getElementById("meetingId").value);
+      const reason = escapeHtml(document.getElementById("reason").value);
+
+      emailBody = `Series ID: ${id}<br>Reason: ${reason}`;
+    } else if (action === "Add Participant") {
+      const id = escapeHtml(document.getElementById("meetingId").value);
+      const newParticipant = escapeHtml(document.getElementById("newParticipantEmail").value);
+      const name = escapeHtml(document.getElementById("newParticipantName").value);
+
+      emailBody = `Meeting ID: ${id}<br>New Participant: ${newParticipant}`;
+      if (name) emailBody += `<br>Name: ${name}`;
+    } else if (action === "Update Meeting") {
+      const id = escapeHtml(document.getElementById("meetingId").value);
+      const newTitle = escapeHtml(document.getElementById("newTitle").value);
+
+      emailBody = `Meeting ID: ${id}<br>New Title: ${newTitle}`;
     }
-  } else {
-    // If testing in browser without Office.js
-    console.log("Subject:", action);
-    console.log("Body:", emailBody);
 
-    if (doSP) {
-      await executeSPLog(
-        action,
-        activeTab,
-        statusEl,
-        "Testing outside Outlook. Logged to SharePoint.",
-        "Testing outside Outlook. SP Log failed."
-      );
+    if (window.Office && window.Office.context && window.Office.context.mailbox) {
+      if (doEmail) {
+        statusEl.innerText = "Constructing Email...";
+        statusEl.style.color = "blue";
+
+        // Clear To, CC, BCC
+        Office.context.mailbox.item.to.setAsync(
+          [{ emailAddress: "connect@uvidconsulting.com" }],
+          (res) => {
+            if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+          }
+        );
+        Office.context.mailbox.item.cc.setAsync([], (res) => {
+          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+        });
+        Office.context.mailbox.item.bcc.setAsync([], (res) => {
+          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+        });
+
+        Office.context.mailbox.item.subject.setAsync(action, (res) => {
+          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+        });
+
+        // Append Regards and Disclaimer
+        const name = userEmail ? userEmail.split("@")[0].replace(".", " ") : "User";
+        const capitalizedName = name.replace(/\b\w/g, (l) => l.toUpperCase());
+        const finalEmailBody =
+          emailBody +
+          `<br><br>Best regards,<br>${capitalizedName}<br><br><i>[Auto-generated email by UVID Teams Meeting Automate]</i>`;
+
+        Office.context.mailbox.item.body.setAsync(
+          finalEmailBody,
+          { coercionType: Office.CoercionType.Html },
+          async (asyncResult) => {
+            if (asyncResult.status === Office.AsyncResultStatus.Failed) {
+              statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
+              statusEl.style.color = "red";
+              return;
+            }
+
+            if (doSP) {
+              await executeSPLog(
+                action,
+                activeTab,
+                statusEl,
+                "Success! Email populated and logged to SharePoint.",
+                "Email populated, but failed to log to SharePoint."
+              );
+            } else {
+              statusEl.innerText = "Success! Email constructed.";
+              statusEl.style.color = "green";
+            }
+          }
+        );
+      } else if (doSP) {
+        await executeSPLog(
+          action,
+          activeTab,
+          statusEl,
+          "Success! Logged to SharePoint.",
+          "Failed to log to SharePoint."
+        );
+      }
     } else {
-      statusEl.innerText = "Testing outside Outlook. Email generated in console.";
-      statusEl.style.color = "orange";
+      // If testing in browser without Office.js
+      console.log("Subject:", action);
+      console.log("Body:", emailBody);
+
+      if (doSP) {
+        await executeSPLog(
+          action,
+          activeTab,
+          statusEl,
+          "Testing outside Outlook. Logged to SharePoint.",
+          "Testing outside Outlook. SP Log failed."
+        );
+      } else {
+        statusEl.innerText = "Testing outside Outlook. Email generated in console.";
+        statusEl.style.color = "orange";
+      }
     }
   }
 }
@@ -407,7 +435,7 @@ async function logToSharePoint(action, activeTab) {
         SeriesID: "NEW_ID",
         Project: document.getElementById("project")?.value || "Unknown",
         MeetingType: document.getElementById("meetingType")?.value || "Client",
-        LeadEmail: document.getElementById("leadEmail")?.value || "Unknown",
+        LeadEmail: document.getElementById("senderEmail")?.value || "Unknown",
         Timezone: document.getElementById("timezone")?.value || "UTC",
         Duration_x0028_minutes_x0029_: parseInt(document.getElementById("duration")?.value) || 0,
         Requiredattendees:

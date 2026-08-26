@@ -229,14 +229,29 @@
     </style>
   </head>
   <body>
-    <div id="authContainer" style="display: none; padding: 15px; background-color: #fff4ce; border-left: 4px solid #f2c811; margin-bottom: 15px;">
-      <p style="margin-top: 0; font-size: 14px; font-weight: 600;">Sign in required</p>
-      <p style="margin-bottom: 10px; font-size: 13px;">Please sign in to load Projects and Time Zones from SharePoint.</p>
-      <button id="signInBtn" class="ms-Button ms-Button--primary" style="width: auto; padding: 5px 15px;">
+    <div
+      id="authContainer"
+      style="
+        display: none;
+        padding: 15px;
+        background-color: #fff4ce;
+        border-left: 4px solid #f2c811;
+        margin-bottom: 15px;
+      "
+    >
+      <p style="margin-top: 0; font-size: 14px; font-weight: 600">Sign in required</p>
+      <p style="margin-bottom: 10px; font-size: 13px">
+        Please sign in to load Projects and Time Zones from SharePoint.
+      </p>
+      <button
+        id="signInBtn"
+        class="ms-Button ms-Button--primary"
+        style="width: auto; padding: 5px 15px"
+      >
         <span class="ms-Button-label">Sign In</span>
       </button>
     </div>
-    
+
     <main id="app-body">
       <h2>UVID Teams Meeting Automate</h2>
 
@@ -348,15 +363,27 @@
               <option value="Internal">Internal</option>
             </select>
           </div>
-          <div class="form-group">
-            <label for="leadEmail">Lead Email</label>
-            <input type="text" id="leadEmail" class="email-input" />
-            <div class="error-text">Invalid email format.</div>
-          </div>
-
-          <!-- Participants / Attendees -->
           <div class="form-group section-box">
-            <label for="requiredAttendees">Required Attendees</label>
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <label for="senderEmail">Sender Email</label>
+              <button
+                type="button"
+                id="btnExtractEmail"
+                class="btn btn-secondary"
+                style="padding: 2px 8px; font-size: 12px; height: auto"
+              >
+                Extract Email
+              </button>
+            </div>
+            <input
+              type="text"
+              id="senderEmail"
+              class="email-input"
+              placeholder="Paste name and email..."
+            />
+            <div class="error-text">Invalid email format.</div>
+
+            <label for="requiredAttendees" style="margin-top: 10px">Required Attendees</label>
             <textarea
               id="requiredAttendees"
               class="multi-email-input"
@@ -396,8 +423,8 @@
           <div class="form-group">
             <label for="timezone">Timezone</label>
             <select id="timezone">
-                <option value="">Loading time zones...</option>
-              </select>
+              <option value="">Loading time zones...</option>
+            </select>
           </div>
 
           <!-- RECURRING FIELDS -->
@@ -420,16 +447,39 @@
                 <option value="Monthly">Monthly</option>
               </select>
             </div>
-            <div class="form-group" id="selectedDaysOfWeekSection" style="display: none;">
+            <div class="form-group" id="selectedDaysOfWeekSection" style="display: none">
               <label>Selected Days Of Week</label>
-              <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Monday" /> Monday</label>
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Tuesday" /> Tuesday</label>
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Wednesday" /> Wednesday</label>
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Thursday" /> Thursday</label>
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Friday" /> Friday</label>
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Saturday" /> Saturday</label>
-                <label style="font-weight: normal;"><input type="checkbox" name="recurrenceDays" value="Sunday" /> Sunday</label>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: row;
+                  flex-wrap: wrap;
+                  gap: 10px;
+                  margin-top: 5px;
+                "
+              >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Monday" /> Monday</label
+                >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Tuesday" /> Tuesday</label
+                >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Wednesday" />
+                  Wednesday</label
+                >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Thursday" /> Thursday</label
+                >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Friday" /> Friday</label
+                >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Saturday" /> Saturday</label
+                >
+                <label style="font-weight: normal"
+                  ><input type="checkbox" name="recurrenceDays" value="Sunday" /> Sunday</label
+                >
               </div>
             </div>
             <div class="form-group">
@@ -459,22 +509,58 @@
         <!-- ==============================================
              EDIT MEETING TAB
              ============================================== -->
-        <div id="editMeetingContainer" style="display: none; position: relative;">
+        <div id="editMeetingContainer" style="display: none; position: relative">
           <!-- Cancel Button -->
-          <button id="btnCancelEdit" class="action-btn secondary" style="position: absolute; top: 0; right: 0; width: auto; padding: 4px 8px; font-size: 12px; display: none;">Cancel</button>
+          <button
+            id="btnCancelEdit"
+            class="action-btn secondary"
+            style="
+              position: absolute;
+              top: 0;
+              right: 0;
+              width: auto;
+              padding: 4px 8px;
+              font-size: 12px;
+              display: none;
+            "
+          >
+            Cancel
+          </button>
 
           <div class="form-group section-box" id="idSection">
             <label for="meetingId">Meeting ID / Series ID</label>
             <div style="display: flex; gap: 8px">
-              <input type="text" id="meetingId" placeholder="Paste ID from SharePoint or confirmation email" />
-              <button type="button" id="btnFetchMeeting" class="action-btn primary" style="width: auto; padding: 8px 16px; min-width: 80px">Fetch</button>
+              <input
+                type="text"
+                id="meetingId"
+                placeholder="Paste ID from SharePoint or confirmation email"
+              />
+              <button
+                type="button"
+                id="btnFetchMeeting"
+                class="action-btn primary"
+                style="width: auto; padding: 8px 16px; min-width: 80px"
+              >
+                Fetch
+              </button>
             </div>
             <span class="help-text">Required to fetch details for updating or cancelling.</span>
-            <div id="fetchMeetingStatus" class="status" style="margin-top: 8px; font-size: 13px; text-align: left;"></div>
+            <div
+              id="fetchMeetingStatus"
+              class="status"
+              style="margin-top: 8px; font-size: 13px; text-align: left"
+            ></div>
           </div>
 
-          <div id="editMeetingForm" style="display: none;">
-            <div class="form-group section-box" style="background-color: #ffffff; border: 1px solid #315eff; border-left: 4px solid #315eff;">
+          <div id="editMeetingForm" style="display: none">
+            <div
+              class="form-group section-box"
+              style="
+                background-color: #ffffff;
+                border: 1px solid #315eff;
+                border-left: 4px solid #315eff;
+              "
+            >
               <label for="flowActionEdit">Flow Action (Select what you want to do)</label>
               <select id="flowActionEdit">
                 <option value="Update Meeting Details">Update Meeting Details</option>
@@ -487,55 +573,76 @@
             </div>
 
             <!-- Recurrence Idea Fields (Hidden by default, used for Power Automate list logic) -->
-            <div id="recurrenceEditSection" class="form-group section-box" style="display: none; border-left: 4px solid #f79e02; background: #fffdf5;">
+            <div
+              id="recurrenceEditSection"
+              class="form-group section-box"
+              style="display: none; border-left: 4px solid #f79e02; background: #fffdf5"
+            >
               <label>Recurrence Instance Edit</label>
-              <span class="help-text" style="margin-bottom: 8px;">To edit a specific occurrence, provide the Master ID and Instance ID. Power Automate will use these to modify just that event.</span>
+              <span class="help-text" style="margin-bottom: 8px"
+                >To edit a specific occurrence, provide the Master ID and Instance ID. Power
+                Automate will use these to modify just that event.</span
+              >
               <div class="form-group">
                 <label for="masterEventId">Master Event ID</label>
                 <input type="text" id="masterEventId" placeholder="ID of the recurring series" />
               </div>
               <div class="form-group">
                 <label for="recurrenceInstanceId">Recurrence Event ID</label>
-                <input type="text" id="recurrenceInstanceId" placeholder="ID of the specific occurrence" />
+                <input
+                  type="text"
+                  id="recurrenceInstanceId"
+                  placeholder="ID of the specific occurrence"
+                />
               </div>
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editTitle">Meeting Title</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editTitle">Edit</button>
+                <button type="button" class="small-btn btn-unlock" data-target="editTitle">
+                  Edit
+                </button>
               </div>
               <input type="text" id="editTitle" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editDate">Date</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editDate">Edit</button>
+                <button type="button" class="small-btn btn-unlock" data-target="editDate">
+                  Edit
+                </button>
               </div>
               <input type="date" id="editDate" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editTime">Start Time</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editTime">Edit</button>
+                <button type="button" class="small-btn btn-unlock" data-target="editTime">
+                  Edit
+                </button>
               </div>
               <input type="time" id="editTime" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editDuration">Duration (minutes)</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editDuration">Edit</button>
+                <button type="button" class="small-btn btn-unlock" data-target="editDuration">
+                  Edit
+                </button>
               </div>
               <input type="number" id="editDuration" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editTimezone">Timezone</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editTimezone">Edit</button>
+                <button type="button" class="small-btn btn-unlock" data-target="editTimezone">
+                  Edit
+                </button>
               </div>
               <select id="editTimezone" disabled>
                 <option value="">Loading time zones...</option>
@@ -543,19 +650,32 @@
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editRequiredAttendees">Required Attendees</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editRequiredAttendees">Edit</button>
+                <button
+                  type="button"
+                  class="small-btn btn-unlock"
+                  data-target="editRequiredAttendees"
+                >
+                  Edit
+                </button>
               </div>
               <textarea id="editRequiredAttendees" disabled placeholder="Emails..."></textarea>
             </div>
-            
+
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between">
                 <label for="editReason">Reason (For changes/cancellation)</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editReason">Edit</button>
+                <button type="button" class="small-btn btn-unlock" data-target="editReason">
+                  Edit
+                </button>
               </div>
-              <input type="text" id="editReason" disabled placeholder="e.g. Client requested change" />
+              <input
+                type="text"
+                id="editReason"
+                disabled
+                placeholder="e.g. Client requested change"
+              />
             </div>
 
             <div class="form-group">
