@@ -177,7 +177,7 @@ async function handleSubmission(doEmail, doSP) {
   if (activeTab === "newMeeting") {
     action = document.getElementById("flowActionNew").value;
   } else {
-    action = document.getElementById("flowAction").value;
+    action = document.getElementById("flowActionEdit").value;
   }
 
   const statusEl = document.getElementById("statusMessage");
@@ -187,6 +187,7 @@ async function handleSubmission(doEmail, doSP) {
   // Format the email body based on action
   let emailBody = "";
 
+  if (activeTab === "newMeeting") {
   if (action === "Schedule Meeting") {
     const title = escapeHtml(document.getElementById("meetingTitle").value);
     const subject = escapeHtml(document.getElementById("meetingSubject").value);
@@ -228,7 +229,6 @@ async function handleSubmission(doEmail, doSP) {
     const type = escapeHtml(document.getElementById("meetingType").value);
     const timezone = escapeHtml(document.getElementById("timezone").value);
     const freq = escapeHtml(document.getElementById("recurrenceFrequency").value);
-    const interval = escapeHtml(document.getElementById("recurrenceInterval").value);
     const recurStartDate = escapeHtml(
       formatDateText(document.getElementById("recurrenceStartDate").value)
     );
@@ -236,7 +236,7 @@ async function handleSubmission(doEmail, doSP) {
       formatDateText(document.getElementById("recurrenceEndDate").value)
     );
 
-    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Interval: ${interval}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
+    emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
   } else if (action === "Reschedule Meeting") {
     const id = escapeHtml(document.getElementById("meetingId").value);
     const date = escapeHtml(formatDateText(document.getElementById("newDate").value));
@@ -424,9 +424,6 @@ async function logToSharePoint(action, activeTab) {
                 )
               )
             : "[]",
-        Recurrenceinterval: isRecurring
-          ? parseInt(document.getElementById("recurrenceInterval")?.value) || 1
-          : 0,
         Recurrencestartdate:
           isRecurring && document.getElementById("recurrenceStartDate")?.value
             ? document.getElementById("recurrenceStartDate").value + "T00:00:00"
