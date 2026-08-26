@@ -8,6 +8,25 @@
 let userEmail = "";
 
 Office.onReady(() => {
+  // Initialize Quill Editor
+  const quill = new window.Quill("#editor-container", {
+    theme: "snow",
+    modules: {
+      toolbar: [
+        ["bold", "italic", "underline"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link"],
+      ],
+    },
+  });
+
+  quill.on("text-change", function () {
+    const messageInput = document.getElementById("meetingEventMessage");
+    if (messageInput) {
+      messageInput.value = quill.root.innerHTML;
+    }
+  });
+
   if (
     window.Office &&
     window.Office.context &&
@@ -20,8 +39,12 @@ Office.onReady(() => {
   }
 
   const genBy = document.getElementById("generatedBy");
+  const senderEmailEl = document.getElementById("senderEmail");
   if (genBy) {
     genBy.value = userEmail;
+  }
+  if (senderEmailEl) {
+    senderEmailEl.value = userEmail;
   }
 
   document.getElementById("signInBtn")?.addEventListener("click", authenticateUser);
@@ -55,7 +78,15 @@ Office.onReady(() => {
   document.getElementById("flowActionNew")?.addEventListener("change", handleActionChangeNew);
 
   document.getElementById("startTime")?.addEventListener("change", calculateEndTime);
-  document.getElementById("duration")?.addEventListener("input", calculateEndTime);
+  const durationEl = document.getElementById("duration");
+  durationEl?.addEventListener("input", calculateEndTime);
+  durationEl?.addEventListener("change", function () {
+    let val = parseInt(this.value);
+    if (!isNaN(val) && val < 15) {
+      this.value = 15;
+      calculateEndTime();
+    }
+  });
 
   document.getElementById("startDate")?.addEventListener("change", (e) => {
     const rStart = document.getElementById("recurrenceStartDate");
@@ -144,22 +175,39 @@ document.getElementById("recurrenceFrequency")?.addEventListener("change", (e) =
 function extractEmailAndAddToAttendees() {
   const senderEmailEl = document.getElementById("senderEmail");
   const reqAttendeesEl = document.getElementById("requiredAttendees");
-  if (!senderEmailEl) return;
+  const optAttendeesEl = document.getElementById("optionalAttendees");
 
-  const val = senderEmailEl.value;
-  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/i;
-  const match = val.match(emailRegex);
+  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
 
-  if (match) {
-    const extractedEmail = match[1];
-    senderEmailEl.value = extractedEmail;
-
-    if (reqAttendeesEl) {
-      let currentEmails = reqAttendeesEl.value.split(/[\s,;]+/).filter(Boolean);
-      if (!currentEmails.includes(extractedEmail)) {
-        currentEmails.push(extractedEmail);
-        reqAttendeesEl.value = currentEmails.join(";\n");
+  const cleanField = (el, isMulti) => {
+    if (!el || !el.value) return [];
+    const matches = el.value.match(emailRegex);
+    let extracted = [];
+    if (matches) {
+      if (isMulti) {
+        extracted = [...new Set(matches)];
+        el.value = extracted.join(";\n");
+      } else {
+        extracted = [matches[0]];
+        el.value = matches[0];
       }
+      el.dispatchEvent(new window.Event("input"));
+    }
+    return extracted;
+  };
+
+  const senderExtracted = cleanField(senderEmailEl, false);
+  cleanField(reqAttendeesEl, true);
+  cleanField(optAttendeesEl, true);
+
+  if (senderExtracted.length > 0 && reqAttendeesEl) {
+    const sender = senderExtracted[0];
+    let currentEmails = reqAttendeesEl.value.match(emailRegex) || [];
+    if (!currentEmails.includes(sender)) {
+      currentEmails.push(sender);
+      currentEmails = [...new Set(currentEmails)];
+      reqAttendeesEl.value = currentEmails.join(";\n");
+      reqAttendeesEl.dispatchEvent(new window.Event("input"));
     }
   }
 }
@@ -216,12 +264,8 @@ async function handleSubmission(doEmail, doSP) {
 
   if (activeTab === "newMeeting") {
     if (action === "Schedule Meeting") {
-      const title = escapeHtml(document.getElementById("meetingTitle").value);
       const subject = escapeHtml(document.getElementById("meetingSubject").value);
-      const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(
-        /\n/g,
-        "<br>"
-      );
+      const bodyMsg = document.getElementById("meetingEventMessage").value;
       const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
       const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
       const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
@@ -235,14 +279,10 @@ async function handleSubmission(doEmail, doSP) {
       const type = escapeHtml(document.getElementById("meetingType").value);
       const timezone = escapeHtml(document.getElementById("timezone").value);
 
-      emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Timezone: ${timezone}`;
+      emailBody = `Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Timezone: ${timezone}`;
     } else if (action === "Schedule Recurring Meeting") {
-      const title = escapeHtml(document.getElementById("meetingTitle").value);
       const subject = escapeHtml(document.getElementById("meetingSubject").value);
-      const bodyMsg = escapeHtml(document.getElementById("meetingEventMessage").value).replace(
-        /\n/g,
-        "<br>"
-      );
+      const bodyMsg = document.getElementById("meetingEventMessage").value;
       const date = escapeHtml(formatDateText(document.getElementById("startDate").value));
       const time = escapeHtml(formatTimeText(document.getElementById("startTime").value));
       const endTime = escapeHtml(formatTimeText(document.getElementById("endTime").value));
@@ -263,7 +303,7 @@ async function handleSubmission(doEmail, doSP) {
         formatDateText(document.getElementById("recurrenceEndDate").value)
       );
 
-      emailBody = `Title: ${title}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
+      emailBody = `Subject: ${subject}<br>Message: ${bodyMsg}<br>Date: ${date}<br>Start Time: ${time}<br>End Time: ${endTime}<br>Timezone: ${timezone}<br>Duration: ${duration}<br>Required Attendees: ${reqAttendees}<br>Optional Attendees: ${optAttendees}<br>Type: ${type}<br>Frequency: ${freq}<br>Recurrence Start Date: ${recurStartDate}<br>Recurrence End Date: ${recurEndDate}`;
     } else if (action === "Reschedule Meeting") {
       const id = escapeHtml(document.getElementById("meetingId").value);
       const date = escapeHtml(formatDateText(document.getElementById("newDate").value));
@@ -428,11 +468,9 @@ async function logToSharePoint(action, activeTab) {
 
     payload = {
       fields: {
-        Title: document.getElementById("meetingTitle")?.value || "Unknown",
         MeetingSubject: document.getElementById("meetingSubject")?.value || "",
         MeetingEventmessagecontent: document.getElementById("meetingEventMessage")?.value || "",
         MeetingID: "NEW_ID",
-        SeriesID: "NEW_ID",
         Project: document.getElementById("project")?.value || "Unknown",
         MeetingType: document.getElementById("meetingType")?.value || "Client",
         LeadEmail: document.getElementById("senderEmail")?.value || "Unknown",
