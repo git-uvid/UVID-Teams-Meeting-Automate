@@ -56,7 +56,7 @@ select {
   font-size: 14px;
   border: 1px solid #e1dfdd;
   border-radius: 6px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
   background-color: #fdfdfd;
 }
@@ -86,7 +86,7 @@ textarea {
   border-radius: 6px;
   min-height: 60px;
   font-family: inherit;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
   background-color: #fdfdfd;
 }
@@ -95,7 +95,9 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: #0078d4;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05), 0 0 0 3px rgba(0,120,212,0.2);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.05),
+    0 0 0 3px rgba(0, 120, 212, 0.2);
   background-color: #ffffff;
 }
 
@@ -138,8 +140,12 @@ textarea:focus {
 
 /* 3D button effects */
 .action-btn {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
   border-radius: 6px;
 }
 .action-btn:active {
