@@ -512,7 +512,7 @@
              EDIT MEETING TAB
              ============================================== -->
         <div id="editMeetingContainer" style="display: none; position: relative">
-          <!-- Cancel Button -->
+          <!-- Cancel Meeting Button -->
           <button
             id="btnCancelEdit"
             class="action-btn secondary"
@@ -524,9 +524,12 @@
               padding: 4px 8px;
               font-size: 12px;
               display: none;
+              background-color: #a4262c;
+              color: white;
+              border: none;
             "
           >
-            Cancel
+            Cancel Meeting
           </button>
 
           <div class="form-group section-box" id="idSection">
@@ -555,128 +558,173 @@
           </div>
 
           <div id="editMeetingForm" style="display: none">
-            <div
-              class="form-group section-box"
-              style="
-                background-color: #ffffff;
-                border: 1px solid #315eff;
-                border-left: 4px solid #315eff;
-              "
-            >
-              <label for="flowActionEdit">Flow Action (Select what you want to do)</label>
-              <select id="flowActionEdit">
-                <option value="Update Meeting Details">Update Meeting Details</option>
-                <option value="Reschedule Meeting">Reschedule Meeting</option>
-                <option value="Cancel Meeting">Cancel Meeting</option>
-                <option value="Reschedule Series">Reschedule Series</option>
-                <option value="Cancel Series">Cancel Series</option>
-                <option value="Add Participant">Add Participant</option>
-              </select>
-            </div>
 
-            <!-- Recurrence Idea Fields (Hidden by default, used for Power Automate list logic) -->
+
+            <!-- Recurrence Event Selection UI -->
             <div
-              id="recurrenceEditSection"
+              id="recurrenceSelectionContainer"
               class="form-group section-box"
               style="display: none; border-left: 4px solid #f79e02; background: #fffdf5"
             >
-              <label>Recurrence Instance Edit</label>
-              <span class="help-text" style="margin-bottom: 8px"
-                >To edit a specific occurrence, provide the Master ID and Instance ID. Power
-                Automate will use these to modify just that event.</span
-              >
-              <div class="form-group">
-                <label for="masterEventId">Master Event ID</label>
-                <input type="text" id="masterEventId" placeholder="ID of the recurring series" />
+              <label>Select Event to Edit</label>
+              <span class="help-text" style="margin-bottom: 8px">This is a recurring meeting. Do you want to edit the master series or a single occurrence?</span>
+              
+              <div style="margin-bottom: 12px">
+                <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer;">
+                  <input type="radio" name="recurrenceType" value="Master" id="radioRecurrenceMaster" checked />
+                  Edit Master Series
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; margin-top: 4px;">
+                  <input type="radio" name="recurrenceType" value="Single" id="radioRecurrenceSingle" />
+                  Edit Individual Event
+                </label>
               </div>
-              <div class="form-group">
-                <label for="recurrenceInstanceId">Recurrence Event ID</label>
-                <input
-                  type="text"
-                  id="recurrenceInstanceId"
-                  placeholder="ID of the specific occurrence"
-                />
+
+              <!-- Container for listing single events -->
+              <div id="singleEventsList" style="display: none; max-height: 150px; overflow-y: auto; border: 1px solid #d1d1d1; padding: 8px; border-radius: 4px; background: #fff">
+                <!-- Javascript will inject <label><input type="radio"... /> Date - Time</label> here -->
               </div>
+
+              <button type="button" id="btnConfirmRecurrenceSelection" class="action-btn primary" style="margin-top: 12px; padding: 6px 12px; width: auto; font-size: 12px">Proceed</button>
             </div>
+            <input type="hidden" id="masterEventId" />
+            <input type="hidden" id="recurrenceInstanceId" />
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
+              <div style="display: flex; justify-content: space-between; align-items: center">
                 <label for="editTitle">Meeting Title</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editTitle">
-                  Edit
-                </button>
+                <button type="button" class="btn-unlock" data-target="editTitle" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input type="text" id="editTitle" disabled />
             </div>
+            
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <label>Meeting Event Message (Invite Body)</label>
+                <button type="button" class="btn-unlock-editor" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
+              </div>
+              <div style="position: relative;">
+                <div
+                  id="edit-editor-container"
+                  style="
+                    height: 150px;
+                    background-color: #f3f2f1;
+                    border-radius: 4px;
+                    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+                    border: 1px solid #d1d1d1;
+                  "
+                ></div>
+                <!-- Overlay to block clicks -->
+                <div id="edit-editor-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(243, 242, 241, 0.5); z-index: 10; cursor: not-allowed;"></div>
+              </div>
+              <input type="hidden" id="editMeetingEventMessage" />
+            </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
+              <div style="display: flex; justify-content: space-between; align-items: center">
                 <label for="editDate">Date</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editDate">
-                  Edit
-                </button>
+                <button type="button" class="btn-unlock" data-target="editDate" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input type="date" id="editDate" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
+              <div style="display: flex; justify-content: space-between; align-items: center">
                 <label for="editTime">Start Time</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editTime">
-                  Edit
-                </button>
+                <button type="button" class="btn-unlock" data-target="editTime" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input type="time" id="editTime" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <label for="editEndTime">End Time</label>
+                <button type="button" class="btn-unlock" data-target="editEndTime" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
+              </div>
+              <input type="time" id="editEndTime" disabled />
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center">
                 <label for="editDuration">Duration (minutes)</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editDuration">
-                  Edit
-                </button>
+                <button type="button" class="btn-unlock" data-target="editDuration" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input type="number" id="editDuration" disabled />
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
+              <div style="display: flex; justify-content: space-between; align-items: center">
                 <label for="editTimezone">Timezone</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editTimezone">
-                  Edit
-                </button>
+                <button type="button" class="btn-unlock" data-target="editTimezone" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <select id="editTimezone" disabled>
                 <option value="">Loading time zones...</option>
               </select>
             </div>
 
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
-                <label for="editRequiredAttendees">Required Attendees</label>
+            <div class="form-group section-box">
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <label for="editSenderEmail" style="margin: 0;">Sender Email</label>
+                  <button type="button" class="btn-unlock" data-target="editSenderEmail" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
+                </div>
                 <button
                   type="button"
-                  class="small-btn btn-unlock"
-                  data-target="editRequiredAttendees"
+                  id="btnExtractEmailEdit"
+                  class="btn btn-secondary"
+                  style="padding: 2px 8px; font-size: 12px; height: auto"
+                  disabled
                 >
-                  Edit
+                  Extract Email
                 </button>
               </div>
-              <textarea id="editRequiredAttendees" disabled placeholder="Emails..."></textarea>
+              <textarea
+                id="editSenderEmail"
+                class="multi-email-input"
+                placeholder="Paste name and email..."
+                disabled
+              ></textarea>
+              <div class="error-text">Invalid email format.</div>
+  
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <label for="editRequiredAttendees" style="margin: 0;">Required Attendees</label>
+                <button type="button" class="btn-unlock" data-target="editRequiredAttendees" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
+              </div>
+              <textarea
+                id="editRequiredAttendees"
+                class="multi-email-input"
+                placeholder="Paste emails here (comma/newline separated)"
+                disabled
+              ></textarea>
+              <div class="error-text">Some emails are invalid.</div>
+  
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <label for="editOptionalAttendees" style="margin: 0;">Optional Attendees</label>
+                <button type="button" class="btn-unlock" data-target="editOptionalAttendees" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
+              </div>
+              <textarea
+                id="editOptionalAttendees"
+                class="multi-email-input"
+                placeholder="Paste emails here"
+                disabled
+              ></textarea>
+              <div class="error-text">Some emails are invalid.</div>
+              <span class="help-text"
+                >Emails separated by commas, spaces, or newlines. Output uses semicolons
+                automatically.</span
+              >
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between">
-                <label for="editReason">Reason (For changes/cancellation)</label>
-                <button type="button" class="small-btn btn-unlock" data-target="editReason">
-                  Edit
-                </button>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label for="editReason" style="margin: 0;">Reason (For changes/cancellation)</label>
+                <button type="button" class="btn-unlock" data-target="editReason" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input
                 type="text"
                 id="editReason"
-                disabled
                 placeholder="e.g. Client requested change"
+                disabled
               />
             </div>
 
@@ -690,15 +738,16 @@
       </div>
 
       <div class="button-group" style="display: flex; flex-direction: column; gap: 10px">
-        <button id="injectEmailOnly" class="action-btn primary">Create Email Only</button>
+        <button id="injectEmailOnly" class="action-btn primary" disabled>Create Email Only</button>
         <button
           id="logSpOnly"
-          class="action-btn primary"
-          style="background-color: #f79e02; border-color: #f79e02"
+          class="action-btn secondary"
+          style="background-color: #107c41; color: white; border: none"
+          disabled
         >
           Log to SharePoint Only
         </button>
-        <button id="injectAndLog" class="action-btn primary">Construct Email & Log SP</button>
+        <button id="injectAndLog" class="action-btn primary" disabled>Construct Email & Log SP</button>
       </div>
 
       <div id="statusMessage" class="status"></div>

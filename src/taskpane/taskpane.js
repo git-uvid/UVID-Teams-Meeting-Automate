@@ -27,6 +27,55 @@ Office.onReady(() => {
     }
   });
 
+  editEditor = new Quill("#edit-editor-container", {
+    theme: "snow",
+    placeholder: "Compose meeting invite body...",
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, false] }],
+        ["bold", "italic", "underline"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "clean"],
+      ],
+    },
+  });
+
+  editEditor.on("text-change", function () {
+    const editMessageInput = document.getElementById("editMeetingEventMessage");
+    if (editMessageInput) {
+      editMessageInput.value = editEditor.root.innerHTML;
+    }
+  });
+  
+  document.getElementById('edit-editor-container').__quill = editEditor;
+
+  document.querySelectorAll(".btn-unlock").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const targetId = e.currentTarget.getAttribute("data-target");
+      if (targetId) {
+        const inputEl = document.getElementById(targetId);
+        if (inputEl) {
+          inputEl.disabled = false;
+          inputEl.focus();
+        }
+        
+        // Special case for Sender Email
+        if (targetId === "editSenderEmail") {
+          const extractBtn = document.getElementById("btnExtractEmailEdit");
+          if (extractBtn) extractBtn.disabled = false;
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll(".btn-unlock-editor").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const overlay = document.getElementById("edit-editor-overlay");
+      if (overlay) overlay.style.display = "none";
+      if (editEditor) editEditor.focus();
+    });
+  });
+
   if (
     window.Office &&
     window.Office.context &&
@@ -50,23 +99,7 @@ Office.onReady(() => {
   document.getElementById("signInBtn")?.addEventListener("click", authenticateUser);
 
   document.getElementById("btnCancelEdit")?.addEventListener("click", () => {
-    document.getElementById("editMeetingForm").style.display = "none";
-    document.getElementById("idSection").style.display = "block";
-    document.getElementById("btnCancelEdit").style.display = "none";
-    document.getElementById("fetchMeetingStatus").innerText = "";
-  });
-
-  document.querySelectorAll(".btn-unlock").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const targetId = e.target.getAttribute("data-target");
-      if (targetId) {
-        const inputEl = document.getElementById(targetId);
-        if (inputEl) {
-          inputEl.disabled = false;
-          inputEl.focus();
-        }
-      }
-    });
+    handleSubmission(false, true, "Cancel Meeting");
   });
 
   // Listeners for Tab Navigation
@@ -106,6 +139,7 @@ Office.onReady(() => {
     ?.addEventListener("click", () => handleSubmission(true, true));
 
   document.getElementById("btnFetchMeeting")?.addEventListener("click", fetchMeetingDetails);
+  document.getElementById("btnConfirmRecurrenceSelection")?.addEventListener("click", handleRecurrenceSelection);
   document
     .getElementById("btnExtractEmail")
     ?.addEventListener("click", extractEmailAndAddToAttendees);
@@ -212,6 +246,47 @@ function extractEmailAndAddToAttendees() {
   }
 }
 
+// Extractor logic for Edit Meeting
+document.getElementById("btnExtractEmailEdit")?.addEventListener("click", () => {
+  const senderEmailEl = document.getElementById("editSenderEmail");
+  const reqAttendeesEl = document.getElementById("editRequiredAttendees");
+  const optAttendeesEl = document.getElementById("editOptionalAttendees");
+
+  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+
+  const cleanField = (el, isMulti) => {
+    if (!el || !el.value) return [];
+    const matches = el.value.match(emailRegex);
+    let extracted = [];
+    if (matches) {
+      if (isMulti) {
+        extracted = [...new Set(matches)];
+        el.value = extracted.join(";\n");
+      } else {
+        extracted = [matches[0]];
+        el.value = matches[0];
+      }
+      el.dispatchEvent(new window.Event("input"));
+    }
+    return extracted;
+  };
+
+  const senderExtracted = cleanField(senderEmailEl, false);
+  cleanField(reqAttendeesEl, true);
+  cleanField(optAttendeesEl, true);
+
+  if (senderExtracted.length > 0 && reqAttendeesEl) {
+    const sender = senderExtracted[0];
+    let currentEmails = reqAttendeesEl.value.match(emailRegex) || [];
+    if (!currentEmails.includes(sender)) {
+      currentEmails.push(sender);
+      currentEmails = [...new Set(currentEmails)];
+      reqAttendeesEl.value = currentEmails.join(";\n");
+      reqAttendeesEl.dispatchEvent(new window.Event("input"));
+    }
+  }
+});
+
 // Function to format date to "15 July 2026"
 function formatDateText(dateStr) {
   if (!dateStr) return "";
@@ -245,14 +320,14 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-async function handleSubmission(doEmail, doSP) {
+async function handleSubmission(doEmail, doSP, overrideAction = null) {
   const activeTab = document.querySelector('input[name="tabNav"]:checked').value;
   let action = "";
 
   if (activeTab === "newMeeting") {
     action = document.getElementById("flowActionNew").value;
   } else {
-    action = document.getElementById("flowActionEdit").value;
+    action = overrideAction || document.getElementById("flowActionEdit").value;
   }
 
   const statusEl = document.getElementById("statusMessage");
@@ -343,87 +418,93 @@ async function handleSubmission(doEmail, doSP) {
 
       emailBody = `Meeting ID: ${id}<br>New Title: ${newTitle}`;
     }
+  } else {
+    // Edit mode
+    const subject = escapeHtml(document.getElementById("editTitle").value);
+    const bodyMsg = document.getElementById("editMeetingEventMessage").value;
+    const reason = escapeHtml(document.getElementById("editReason").value);
+    emailBody = `Action: ${action}<br>Subject: ${subject}<br>Message: ${bodyMsg}<br>Reason: ${reason}`;
+  }
 
-    if (window.Office && window.Office.context && window.Office.context.mailbox) {
-      if (doEmail) {
-        statusEl.innerText = "Constructing Email...";
-        statusEl.style.color = "blue";
+  if (window.Office && window.Office.context && window.Office.context.mailbox) {
+    if (doEmail) {
+      statusEl.innerText = "Constructing Email...";
+      statusEl.style.color = "blue";
 
-        // Clear To, CC, BCC
-        Office.context.mailbox.item.to.setAsync(
-          [{ emailAddress: "connect@uvidconsulting.com" }],
-          (res) => {
-            if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      // Clear To, CC, BCC
+      Office.context.mailbox.item.to.setAsync(
+        [{ emailAddress: "connect@uvidconsulting.com" }],
+        (res) => {
+          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+        }
+      );
+      Office.context.mailbox.item.cc.setAsync([], (res) => {
+        if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
+      Office.context.mailbox.item.bcc.setAsync([], (res) => {
+        if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
+
+      Office.context.mailbox.item.subject.setAsync(action, (res) => {
+        if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
+      });
+
+      // Append Regards and Disclaimer
+      const name = userEmail ? userEmail.split("@")[0].replace(".", " ") : "User";
+      const capitalizedName = name.replace(/\b\w/g, (l) => l.toUpperCase());
+      const finalEmailBody =
+        emailBody +
+        `<br><br>Best regards,<br>${capitalizedName}<br><br><i>[Auto-generated email by UVID Teams Meeting Automate]</i>`;
+
+      Office.context.mailbox.item.body.setAsync(
+        finalEmailBody,
+        { coercionType: Office.CoercionType.Html },
+        async (asyncResult) => {
+          if (asyncResult.status === Office.AsyncResultStatus.Failed) {
+            statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
+            statusEl.style.color = "red";
+            return;
           }
-        );
-        Office.context.mailbox.item.cc.setAsync([], (res) => {
-          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-        });
-        Office.context.mailbox.item.bcc.setAsync([], (res) => {
-          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-        });
 
-        Office.context.mailbox.item.subject.setAsync(action, (res) => {
-          if (res.status === Office.AsyncResultStatus.Failed) console.error(res.error);
-        });
-
-        // Append Regards and Disclaimer
-        const name = userEmail ? userEmail.split("@")[0].replace(".", " ") : "User";
-        const capitalizedName = name.replace(/\b\w/g, (l) => l.toUpperCase());
-        const finalEmailBody =
-          emailBody +
-          `<br><br>Best regards,<br>${capitalizedName}<br><br><i>[Auto-generated email by UVID Teams Meeting Automate]</i>`;
-
-        Office.context.mailbox.item.body.setAsync(
-          finalEmailBody,
-          { coercionType: Office.CoercionType.Html },
-          async (asyncResult) => {
-            if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-              statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
-              statusEl.style.color = "red";
-              return;
-            }
-
-            if (doSP) {
-              await executeSPLog(
-                action,
-                activeTab,
-                statusEl,
-                "Success! Email populated and logged to SharePoint.",
-                "Email populated, but failed to log to SharePoint."
-              );
-            } else {
-              statusEl.innerText = "Success! Email constructed.";
-              statusEl.style.color = "green";
-            }
+          if (doSP) {
+            await executeSPLog(
+              action,
+              activeTab,
+              statusEl,
+              "Success! Email populated and logged to SharePoint.",
+              "Email populated, but failed to log to SharePoint."
+            );
+          } else {
+            statusEl.innerText = "Success! Email constructed.";
+            statusEl.style.color = "green";
           }
-        );
-      } else if (doSP) {
-        await executeSPLog(
-          action,
-          activeTab,
-          statusEl,
-          "Success! Logged to SharePoint.",
-          "Failed to log to SharePoint."
-        );
-      }
+        }
+      );
+    } else if (doSP) {
+      await executeSPLog(
+        action,
+        activeTab,
+        statusEl,
+        "Success! Logged to SharePoint.",
+        "Failed to log to SharePoint."
+      );
+    }
+  } else {
+    // If testing in browser without Office.js
+    console.log("Subject:", action);
+    console.log("Body:", emailBody);
+
+    if (doSP) {
+      await executeSPLog(
+        action,
+        activeTab,
+        statusEl,
+        "Testing outside Outlook. Logged to SharePoint.",
+        "Testing outside Outlook. SP Log failed."
+      );
     } else {
-      // If testing in browser without Office.js
-      console.log("Subject:", action);
-      console.log("Body:", emailBody);
-
-      if (doSP) {
-        await executeSPLog(
-          action,
-          activeTab,
-          statusEl,
-          "Testing outside Outlook. Logged to SharePoint.",
-          "Testing outside Outlook. SP Log failed."
-        );
-      } else {
-        statusEl.innerText = "Testing outside Outlook. Email generated in console.";
-        statusEl.style.color = "orange";
-      }
+      statusEl.innerText = "Testing outside Outlook. Email generated in console.";
+      statusEl.style.color = "orange";
     }
   }
 }
@@ -445,7 +526,7 @@ async function executeSPLog(action, activeTab, statusEl, successMsg, failMsg) {
 async function logToSharePoint(action, activeTab) {
   const token = await getAccessToken();
   const siteId = "key65akcdgsfg2zhwxauifkam1a.sharepoint.com";
-  const listId = "093329a2-701b-4e93-9789-f561ef47ddce";
+  let listId = "093329a2-701b-4e93-9789-f561ef47ddce"; // Default Meetings Log list
 
   let payload = {};
 
@@ -504,46 +585,57 @@ async function logToSharePoint(action, activeTab) {
       },
     };
   } else {
-    // Edit mode: construct payload ONLY with modified (unlocked) fields
+    // Edit mode: Send ALL data to the Edit Meetings list
+    listId = "82fed015-2b74-4b6d-96e7-f95002bcb0ab"; // Edit Meetings List
+
     payload = { fields: {} };
 
-    payload.fields.MeetingID = document.getElementById("meetingId")?.value || "";
-    payload.fields.SeriesID =
-      document.getElementById("masterEventId")?.value ||
-      document.getElementById("meetingId")?.value ||
-      "";
-    payload.fields.MeetingSubject = document.getElementById("flowActionEdit")?.value || action;
-    payload.fields.GeneratedBy = document.getElementById("triggeredBy")?.value || "Unknown";
+    // Get all values directly from the fields regardless of disabled state
+    const getValue = (id) => document.getElementById(id)?.value || "";
 
-    const getIfUnlocked = (id) => {
-      const el = document.getElementById(id);
-      return el && !el.disabled ? el.value : undefined;
-    };
+    payload.fields.ActionCategory = action;
+    payload.fields.MeetingSubject = getValue("editTitle");
+    payload.fields.Timezone = getValue("editTimezone");
+    payload.fields.RequiredAttendees = getValue("editRequiredAttendees").replace(/[\s,]+/g, ";");
+    payload.fields.OptionalAttendees = getValue("editOptionalAttendees").replace(/[\s,]+/g, ";");
+    
+    // Formatting StartTime / EndTime to SharePoint expected format (ISO-like string)
+    // The inputs are date type and time type. If both exist, combine them.
+    const editDate = getValue("editDate");
+    const editTime = getValue("editTime");
+    const editEndTime = getValue("editEndTime");
+    
+    payload.fields.Body = getValue("editMeetingEventMessage");
 
-    const title = getIfUnlocked("editTitle");
-    if (title !== undefined) payload.fields.Title = title;
-
-    const tz = getIfUnlocked("editTimezone");
-    if (tz !== undefined) payload.fields.Timezone = tz;
-
-    const duration = getIfUnlocked("editDuration");
-    if (duration !== undefined)
-      payload.fields.Duration_x0028_minutes_x0029_ = parseInt(duration) || 0;
-
-    const attendees = getIfUnlocked("editRequiredAttendees");
-    if (attendees !== undefined)
-      payload.fields.Requiredattendees = attendees.replace(/[\s,]+/g, ";");
-
-    const reason = getIfUnlocked("editReason");
-    if (reason !== undefined) payload.fields.MeetingEventmessagecontent = "Reason: " + reason;
-
-    const dateStr = getIfUnlocked("editDate");
-    const timeStr = getIfUnlocked("editTime");
-    if (dateStr !== undefined || timeStr !== undefined) {
-      const d = document.getElementById("editDate")?.value;
-      const t = document.getElementById("editTime")?.value;
-      if (d && t) payload.fields.Starttime = d + "T" + t + ":00Z";
+    if (editDate && editTime) {
+      payload.fields.StartTime = editDate + "T" + editTime + ":00";
+    } else {
+      payload.fields.StartTime = "";
     }
+
+    if (editDate && editEndTime) {
+      // Assuming same day end time for simplicity in UI, if it crosses midnight it would be an issue but UI lacks end date
+      payload.fields.EndTime = editDate + "T" + editEndTime + ":00";
+    } else {
+      payload.fields.EndTime = "";
+    }
+
+    payload.fields.CancelReason = getValue("editReason");
+    
+    // Grab meeting ID and event ID
+    payload.fields.MeetingID = getValue("masterEventId");
+    payload.fields.EventID = getValue("recurrenceInstanceId");
+
+    // Determine TypeOfEvent based on selection
+    let typeOfEvent = "";
+    if (document.getElementById("recurrenceSelectionContainer")?.style.display === "block") {
+       if (document.getElementById("radioRecurrenceMaster")?.checked) {
+           typeOfEvent = "Master Series ID";
+       } else if (document.getElementById("radioRecurrenceSingle")?.checked) {
+           typeOfEvent = "Single Event ID";
+       }
+    }
+    payload.fields.TypeOfEvent = typeOfEvent;
   }
 
   const response = await fetch(
@@ -678,6 +770,8 @@ async function fetchProjects() {
   }
 }
 
+let currentFetchedEvents = { master: null, singles: [] };
+
 async function fetchMeetingDetails() {
   const meetingIdInput = document.getElementById("meetingId");
   const meetingId = meetingIdInput ? meetingIdInput.value.trim() : "";
@@ -685,27 +779,26 @@ async function fetchMeetingDetails() {
 
   if (!meetingId) {
     if (statusEl) {
-      statusEl.innerText = "Please enter a Meeting ID.";
+      statusEl.innerText = "Please enter a 12-digit Meeting ID.";
       statusEl.style.color = "red";
     }
     return;
   }
 
   if (statusEl) {
-    statusEl.innerText = "Fetching details...";
+    statusEl.innerText = "Fetching meeting log details...";
     statusEl.style.color = "blue";
   }
 
   try {
     const token = await getAccessToken();
     const siteId = "key65akcdgsfg2zhwxauifkam1a.sharepoint.com";
-    const listId = "093329a2-701b-4e93-9789-f561ef47ddce";
-
-    // Use $filter on fields/Meeting_ID. Use Prefer header to allow non-indexed queries just in case.
-    // Also orderBy Created desc to get the latest if multiple exist.
-    const queryUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listId}/items?expand=fields&$filter=fields/Meeting_ID eq '${meetingId}'&$orderby=fields/Createdat desc&$top=1`;
-
-    const response = await fetch(queryUrl, {
+    
+    // Step 1: Query Meetings Log (list 1) to get the Teams Meeting ID
+    const logListId = "093329a2-701b-4e93-9789-f561ef47ddce";
+    const logQueryUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${logListId}/items?expand=fields&$filter=fields/Meeting_ID eq '${meetingId}'&$top=1`;
+    
+    const logResponse = await fetch(logQueryUrl, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -714,88 +807,70 @@ async function fetchMeetingDetails() {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch meeting: ${await response.text()}`);
-    }
-
-    const data = await response.json();
-
-    if (data.value && data.value.length > 0) {
-      const itemFields = data.value[0].fields;
-
+    if (!logResponse.ok) throw new Error(`Failed to fetch meeting log: ${await logResponse.text()}`);
+    
+    const logData = await logResponse.json();
+    if (!logData.value || logData.value.length === 0) {
       if (statusEl) {
-        statusEl.innerText = `Found: ${itemFields.Title || "Untitled"}`;
-        statusEl.style.color = "green";
-      }
-
-      const idSection = document.getElementById("idSection");
-      const editMeetingForm = document.getElementById("editMeetingForm");
-      const btnCancelEdit = document.getElementById("btnCancelEdit");
-      if (idSection) idSection.style.display = "none";
-      if (editMeetingForm) editMeetingForm.style.display = "block";
-      if (btnCancelEdit) btnCancelEdit.style.display = "block";
-
-      document
-        .querySelectorAll(
-          "#editMeetingForm input, #editMeetingForm select, #editMeetingForm textarea"
-        )
-        .forEach((el) => {
-          if (
-            el.id !== "flowActionEdit" &&
-            el.id !== "triggeredBy" &&
-            el.id !== "masterEventId" &&
-            el.id !== "recurrenceInstanceId"
-          ) {
-            el.disabled = true;
-          }
-        });
-
-      const trig = document.getElementById("triggeredBy");
-      if (trig) trig.value = userEmail;
-
-      const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.value = val || "";
-      };
-
-      setVal("editTitle", itemFields.Title);
-      setVal("editDuration", itemFields.Duration_x0028_minutes_x0029_ || itemFields.Duration || "");
-      setVal("editTimezone", itemFields.Timezone);
-      setVal(
-        "editRequiredAttendees",
-        itemFields.Requiredattendees ? itemFields.Requiredattendees.replace(/;/g, "\n") : ""
-      );
-
-      if (itemFields.Starttime) {
-        const startDateStr = itemFields.Starttime.split("T")[0];
-        let startTimeStr = itemFields.Starttime.split("T")[1];
-        if (startTimeStr) startTimeStr = startTimeStr.substring(0, 5);
-        setVal("editDate", startDateStr);
-        setVal("editTime", startTimeStr);
-      } else {
-        setVal("editDate", "");
-        setVal("editTime", "");
-      }
-
-      if (
-        itemFields.Recurring === true ||
-        String(itemFields.Recurring).toLowerCase() === "true" ||
-        itemFields.Recurring === 1
-      ) {
-        const recSection = document.getElementById("recurrenceEditSection");
-        if (recSection) recSection.style.display = "block";
-        setVal("masterEventId", itemFields.MeetingID || "");
-      } else {
-        const recSection = document.getElementById("recurrenceEditSection");
-        if (recSection) recSection.style.display = "none";
-        setVal("masterEventId", "");
-        setVal("recurrenceInstanceId", "");
-      }
-    } else {
-      if (statusEl) {
-        statusEl.innerText = "Meeting ID not found in SharePoint.";
+        statusEl.innerText = "Meeting ID not found in Meetings Log.";
         statusEl.style.color = "red";
       }
+      return;
+    }
+
+    const logFields = logData.value[0].fields;
+    const teamsMeetingId = logFields.MeetingID; // Teams ID
+    let isRecurring = logFields.Recurring;
+    if (typeof isRecurring === "string") isRecurring = isRecurring.toLowerCase() === "true";
+    if (isRecurring === 1) isRecurring = true;
+
+    if (statusEl) statusEl.innerText = "Fetching detailed events...";
+
+    // Step 2: Query DetailedEventID (list 2) using TeamsMeetingID
+    const detailedListId = "f7439cde-302a-4c2f-b517-74ab117167a7";
+    const detailedQueryUrl = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${detailedListId}/items?expand=fields&$filter=fields/TeamsMeetingID eq '${teamsMeetingId}'`;
+
+    const detailedResponse = await fetch(detailedQueryUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        Prefer: "HonorNonIndexedQueriesWarningMayFailRandomly",
+      },
+    });
+
+    if (!detailedResponse.ok) throw new Error(`Failed to fetch detailed events: ${await detailedResponse.text()}`);
+    
+    const detailedData = await detailedResponse.json();
+    if (!detailedData.value || detailedData.value.length === 0) {
+      if (statusEl) {
+        statusEl.innerText = "No detailed events found for this meeting.";
+        statusEl.style.color = "red";
+      }
+      return;
+    }
+
+    const allEvents = detailedData.value.map(item => item.fields);
+
+    // Step 3: Handle One-off vs Recurring
+    if (!isRecurring) {
+      // One-off
+      if (statusEl) {
+        statusEl.innerText = `Found: ${allEvents[0].Subject || "Untitled"}`;
+        statusEl.style.color = "green";
+      }
+      populateEditForm(allEvents[0]);
+    } else {
+      // Recurring - Show selection UI
+      if (statusEl) {
+        statusEl.innerText = `Found Recurring Series: ${allEvents[0].Subject || "Untitled"}`;
+        statusEl.style.color = "green";
+      }
+      
+      currentFetchedEvents.master = allEvents.find(e => e.TypeOfEvent === "Master Series ID") || null;
+      currentFetchedEvents.singles = allEvents.filter(e => e.TypeOfEvent === "Single Event ID");
+
+      showRecurrenceSelection();
     }
   } catch (error) {
     console.error("Error fetching meeting details:", error);
@@ -804,6 +879,270 @@ async function fetchMeetingDetails() {
       statusEl.style.color = "red";
     }
   }
+}
+
+function showRecurrenceSelection() {
+  const idSection = document.getElementById("idSection");
+  const recurrenceSelectionContainer = document.getElementById("recurrenceSelectionContainer");
+  const editMeetingForm = document.getElementById("editMeetingForm");
+  const btnCancelEdit = document.getElementById("btnCancelEdit");
+  
+  if (idSection) idSection.style.display = "none";
+  if (editMeetingForm) editMeetingForm.style.display = "block";
+  if (btnCancelEdit) btnCancelEdit.style.display = "block";
+
+  // Hide the actual edit fields until they make a selection
+  document.querySelectorAll("#editMeetingForm > .form-group:not(#recurrenceSelectionContainer)").forEach(el => {
+    el.style.display = "none";
+  });
+
+  if (recurrenceSelectionContainer) recurrenceSelectionContainer.style.display = "block";
+
+  const singleEventsList = document.getElementById("singleEventsList");
+  if (singleEventsList) {
+    singleEventsList.innerHTML = ""; // Clear existing
+    if (currentFetchedEvents.singles.length > 0) {
+      currentFetchedEvents.singles.forEach(event => {
+        const label = document.createElement("label");
+        label.style.display = "block";
+        label.style.marginBottom = "6px";
+        label.style.cursor = "pointer";
+        
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "singleEventSelection";
+        radio.value = event.EventID;
+        radio.style.marginRight = "6px";
+
+        label.appendChild(radio);
+        label.appendChild(document.createTextNode(`${event.StartTime || "Unknown date"} - ${event.Subject}`));
+        singleEventsList.appendChild(label);
+      });
+    } else {
+      singleEventsList.innerText = "No individual occurrences found.";
+    }
+  }
+
+  // Handle radio toggle
+  const radioMaster = document.getElementById("radioRecurrenceMaster");
+  const radioSingle = document.getElementById("radioRecurrenceSingle");
+  const toggleList = () => {
+    if (radioSingle.checked) {
+      singleEventsList.style.display = "block";
+    } else {
+      singleEventsList.style.display = "none";
+    }
+  };
+  radioMaster.addEventListener("change", toggleList);
+  radioSingle.addEventListener("change", toggleList);
+}
+
+function handleRecurrenceSelection() {
+  const radioMaster = document.getElementById("radioRecurrenceMaster");
+  const radioSingle = document.getElementById("radioRecurrenceSingle");
+
+  let selectedEvent = null;
+  const statusEl = document.getElementById("fetchMeetingStatus");
+
+  if (radioMaster && radioMaster.checked) {
+    selectedEvent = currentFetchedEvents.master;
+  } else if (radioSingle && radioSingle.checked) {
+    const selectedSingleRadio = document.querySelector('input[name="singleEventSelection"]:checked');
+    if (!selectedSingleRadio) {
+      if (statusEl) {
+        statusEl.innerText = "Please select an individual event from the list.";
+        statusEl.style.color = "red";
+      }
+      return;
+    }
+    selectedEvent = currentFetchedEvents.singles.find(
+      (e) => e.EventID === selectedSingleRadio.value
+    );
+  }
+
+  if (selectedEvent) {
+    populateEditForm(selectedEvent);
+    if (statusEl) {
+      statusEl.innerText = "Loaded selected recurrence.";
+      statusEl.style.color = "green";
+    }
+  } else {
+    if (statusEl) {
+      statusEl.innerText = "Could not load the selected event data.";
+      statusEl.style.color = "red";
+    }
+  }
+}
+
+let initialEditData = {};
+
+function checkIfEdited() {
+  const getVal = (id) => document.getElementById(id)?.value || "";
+  
+  const currentData = {
+    title: getVal("editTitle"),
+    body: getVal("editMeetingEventMessage"),
+    date: getVal("editDate"),
+    time: getVal("editTime"),
+    endTime: getVal("editEndTime"),
+    duration: getVal("editDuration"),
+    timezone: getVal("editTimezone"),
+    senderEmail: getVal("editSenderEmail"),
+    reqAttendees: getVal("editRequiredAttendees"),
+    optAttendees: getVal("editOptionalAttendees"),
+    reason: getVal("editReason")
+  };
+
+  let hasChanges = false;
+  for (const key in currentData) {
+    if (currentData[key] !== initialEditData[key]) {
+      hasChanges = true;
+      break;
+    }
+  }
+
+  const btnEmailOnly = document.getElementById("injectEmailOnly");
+  const btnLogSpOnly = document.getElementById("logSpOnly");
+  const btnInjectLog = document.getElementById("injectAndLog");
+
+  if (btnEmailOnly) btnEmailOnly.disabled = !hasChanges;
+  if (btnLogSpOnly) btnLogSpOnly.disabled = !hasChanges;
+  if (btnInjectLog) btnInjectLog.disabled = !hasChanges;
+}
+
+function populateEditForm(event) {
+  // Show edit fields
+  document.querySelectorAll("#editMeetingForm > .form-group:not(#recurrenceSelectionContainer)").forEach(el => {
+    el.style.display = "block";
+  });
+  const recurrenceSelectionContainer = document.getElementById("recurrenceSelectionContainer");
+  if (recurrenceSelectionContainer) recurrenceSelectionContainer.style.display = "none";
+  
+  const idSection = document.getElementById("idSection");
+  const editMeetingForm = document.getElementById("editMeetingForm");
+  const btnCancelEdit = document.getElementById("btnCancelEdit");
+  if (idSection) idSection.style.display = "none";
+  if (editMeetingForm) editMeetingForm.style.display = "block";
+  if (btnCancelEdit) btnCancelEdit.style.display = "block";
+
+  const trig = document.getElementById("triggeredBy");
+  if (trig) trig.value = userEmail;
+  
+  if (!event) return;
+
+  const setValue = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.value = val || "";
+    }
+  };
+
+  setValue("editTitle", event.MeetingSubject || event.Title);
+  
+  const editEditorEl = document.getElementById("edit-editor-container");
+  if (editEditorEl && window.Quill) {
+      editEditorEl.__quill = Quill.find(editEditorEl) || null;
+      if(!editEditorEl.__quill && typeof editEditor !== 'undefined') {
+          editEditorEl.__quill = editEditor;
+      }
+      if (editEditorEl.__quill) {
+        editEditorEl.__quill.root.innerHTML = event.Body || "";
+      }
+  }
+
+  // Attach listeners to trigger checkIfEdited
+  const inputsToCheck = [
+    "editTitle", "editDate", "editTime", "editEndTime", "editDuration", 
+    "editTimezone", "editSenderEmail", "editRequiredAttendees", 
+    "editOptionalAttendees", "editReason"
+  ];
+  inputsToCheck.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", checkIfEdited);
+      el.addEventListener("change", checkIfEdited);
+      el.disabled = true; // Start locked
+    }
+  });
+
+  if (typeof editEditor !== 'undefined' && editEditor) {
+    editEditor.on("text-change", checkIfEdited);
+  }
+
+  const startDate = event.StartTime; 
+  if (startDate) {
+    const startDateParts = startDate.split(" ");
+    if (startDateParts.length > 1) {
+      // Format: "08/29/2026 00:26:00" -> MM/DD/YYYY HH:MM:SS
+      const dParts = startDateParts[0].split("/"); // [08, 29, 2026]
+      if (dParts.length === 3) {
+        setValue("editDate", `${dParts[2]}-${dParts[0].padStart(2, '0')}-${dParts[1].padStart(2, '0')}`);
+      }
+      setValue("editTime", startDateParts[1].substring(0, 5));
+    } else if (startDate.includes("T")) {
+      const parts = startDate.split("T");
+      setValue("editDate", parts[0]);
+      setValue("editTime", parts[1].substring(0, 5));
+    }
+  }
+
+  const endDate = event.EndTime;
+  if (endDate) {
+    const endDateParts = endDate.split(" ");
+    if (endDateParts.length > 1) {
+      setValue("editEndTime", endDateParts[1].substring(0, 5));
+    } else if (endDate.includes("T")) {
+      setValue("editEndTime", endDate.split("T")[1].substring(0, 5));
+    }
+  }
+
+  setValue("editTimezone", event.Timezone || event.TimeZone);
+  setValue(
+    "editRequiredAttendees",
+    event.RequiredAttendees ? event.RequiredAttendees.replace(/;/g, "\n") : ""
+  );
+  setValue(
+    "editOptionalAttendees",
+    event.OptionalAttendees ? event.OptionalAttendees.replace(/;/g, "\n") : ""
+  );
+  setValue("editReason", event.CancelReason || "");
+  setValue("masterEventId", event.MasterEventID || event.TeamsMeetingID || "");
+  setValue("recurrenceInstanceId", event.EventID || "");
+
+  // Lock all inputs initially
+  const inputsToLock = [
+    "editTitle", "editDate", "editTime", "editEndTime", "editDuration", 
+    "editTimezone", "editSenderEmail", "editRequiredAttendees", 
+    "editOptionalAttendees", "editReason"
+  ];
+  inputsToLock.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+
+  const extractBtn = document.getElementById("btnExtractEmailEdit");
+  if (extractBtn) extractBtn.disabled = true;
+
+  const overlay = document.getElementById("edit-editor-overlay");
+  if (overlay) overlay.style.display = "block";
+
+  // Store initial state
+  const getVal = (id) => document.getElementById(id)?.value || "";
+  initialEditData = {
+    title: getVal("editTitle"),
+    body: getVal("editMeetingEventMessage"),
+    date: getVal("editDate"),
+    time: getVal("editTime"),
+    endTime: getVal("editEndTime"),
+    duration: getVal("editDuration"),
+    timezone: getVal("editTimezone"),
+    senderEmail: getVal("editSenderEmail"),
+    reqAttendees: getVal("editRequiredAttendees"),
+    optAttendees: getVal("editOptionalAttendees"),
+    reason: getVal("editReason")
+  };
+  
+  checkIfEdited();
 }
 
 // Utility: email validation
