@@ -170,6 +170,22 @@ Office.onReady(() => {
     ?.addEventListener("click", extractEmailAndAddToAttendees);
   document.getElementById("senderEmail")?.addEventListener("change", extractEmailAndAddToAttendees);
 
+  // Duration validation
+  const validateDuration = (e) => {
+    let val = parseInt(e.target.value);
+    if (isNaN(val)) return;
+    if (val < 15) val = 15;
+    const remainder = val % 5;
+    if (remainder !== 0) {
+      val = val + (5 - remainder);
+    }
+    e.target.value = val;
+    // Trigger any dependent calculations
+    e.target.dispatchEvent(new window.Event("input"));
+  };
+  document.getElementById("duration")?.addEventListener("blur", validateDuration);
+  document.getElementById("editDuration")?.addEventListener("blur", validateDuration);
+
   // Initial setup
   handleTabChange();
 
@@ -683,10 +699,13 @@ async function logToSharePoint(action, activeTab) {
     // Determine TypeOfEvent based on selection
     let typeOfEvent = "";
     if (document.getElementById("recurrenceSelectionContainer")?.style.display === "block") {
-      if (document.getElementById("radioRecurrenceMaster")?.checked) {
-        typeOfEvent = "Master Series ID";
-      } else if (document.getElementById("radioRecurrenceSingle")?.checked) {
-        typeOfEvent = "Single Event ID";
+      const selectedRadio = document.querySelector('input[name="eventSelection"]:checked');
+      if (selectedRadio) {
+        if (selectedRadio.value === "MASTER") {
+          typeOfEvent = "Master Series ID";
+        } else {
+          typeOfEvent = "Single Event ID";
+        }
       }
     }
     payload.fields.TypeOfEvent = typeOfEvent;
@@ -1011,7 +1030,7 @@ function showRecurrenceSelection() {
       }
 
       const pattern = mEvent.Recurrencepattern ? ` (${mEvent.Recurrencepattern})` : "";
-      const text = `${mStart} - ${mEnd}, ${mStartTime} - ${mEndTime}, ${mEvent.Subject || "Untitled"}${pattern}`;
+      const text = `${mStart} - ${mEnd} ${mStartTime} - ${mEndTime} ${mEvent.Subject || "Untitled"}${pattern}`;
 
       label.appendChild(radio);
       label.appendChild(document.createTextNode(text));
@@ -1046,7 +1065,7 @@ function showRecurrenceSelection() {
           iEndTime = p.length > 1 ? formatTimeText(p[1]) : "";
         }
 
-        const text = `${iDate}, ${iStartTime} - ${iEndTime}, ${event.Subject || "Untitled"}`;
+        const text = `${iDate} ${iStartTime} - ${iEndTime} ${event.Subject || "Untitled"}`;
 
         label.appendChild(radio);
         label.appendChild(document.createTextNode(text));
