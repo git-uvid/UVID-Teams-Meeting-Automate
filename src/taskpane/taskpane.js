@@ -114,13 +114,6 @@ Office.onReady(() => {
   document.getElementById("startTime")?.addEventListener("change", calculateEndTime);
   const durationEl = document.getElementById("duration");
   durationEl?.addEventListener("input", calculateEndTime);
-  durationEl?.addEventListener("change", function () {
-    let val = parseInt(this.value);
-    if (!isNaN(val) && val < 15) {
-      this.value = 15;
-      calculateEndTime();
-    }
-  });
 
   document.getElementById("startDate")?.addEventListener("change", (e) => {
     const rStart = document.getElementById("recurrenceStartDate");
@@ -183,8 +176,8 @@ Office.onReady(() => {
     // Trigger any dependent calculations
     e.target.dispatchEvent(new window.Event("input"));
   };
-  document.getElementById("duration")?.addEventListener("blur", validateDuration);
-  document.getElementById("editDuration")?.addEventListener("blur", validateDuration);
+  document.getElementById("duration")?.addEventListener("change", validateDuration);
+  document.getElementById("editDuration")?.addEventListener("change", validateDuration);
 
   // Initial setup
   handleTabChange();
@@ -381,7 +374,7 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
   if (activeTab === "newMeeting") {
     action = document.getElementById("flowActionNew").value;
   } else {
-    action = overrideAction || document.getElementById("flowActionEdit").value;
+    action = overrideAction || "Change Details";
   }
 
   const statusEl = document.getElementById("statusMessage");
@@ -690,7 +683,7 @@ async function logToSharePoint(action, activeTab) {
       payload.fields.EndTime = "";
     }
 
-    payload.fields.CancelReason = getValue("editReason");
+    payload.fields.Notes = getValue("editReason");
 
     // Grab meeting ID and event ID
     payload.fields.MeetingID = getValue("masterEventId");
@@ -707,8 +700,14 @@ async function logToSharePoint(action, activeTab) {
           typeOfEvent = "Single Event ID";
         }
       }
+    } else {
+      // If it's a one-off meeting (no recurrence selection container), it's a single event
+      typeOfEvent = "Single Event ID";
     }
     payload.fields.TypeOfEvent = typeOfEvent;
+    
+    // Silently add the user who triggered the action
+    payload.fields.TriggeredBy = userEmail;
   }
 
   const response = await fetch(
@@ -945,7 +944,7 @@ async function fetchMeetingDetails() {
     if (!isRecurring) {
       // One-off
       if (statusEl) {
-        statusEl.innerText = `Found: ${allEvents[0].Subject || "Untitled"}`;
+        statusEl.innerText = `Selected details: Single Event ID\nFound: ${allEvents[0].Subject || "Untitled"}`;
         statusEl.style.color = "green";
       }
       populateEditForm(allEvents[0]);
@@ -1097,7 +1096,7 @@ function handleRecurrenceSelection() {
   if (selectedEvent) {
     populateEditForm(selectedEvent);
     if (statusEl) {
-      statusEl.innerText = "Loaded selected recurrence.";
+      statusEl.innerText = `Selected details: ${selectedRadio.value === "MASTER" ? "Master Series ID" : "Single Event ID"}`;
       statusEl.style.color = "green";
     }
   } else {
@@ -1139,9 +1138,11 @@ function checkIfEdited() {
   const btnLogSpOnly = document.getElementById("editLogSpOnly");
   const btnInjectLog = document.getElementById("editInjectAndLog");
 
-  if (btnEmailOnly) btnEmailOnly.disabled = !hasChanges;
-  if (btnLogSpOnly) btnLogSpOnly.disabled = !hasChanges;
-  if (btnInjectLog) btnInjectLog.disabled = !hasChanges;
+  const isNotesEmpty = !currentData.reason.trim();
+
+  if (btnEmailOnly) btnEmailOnly.disabled = !hasChanges || isNotesEmpty;
+  if (btnLogSpOnly) btnLogSpOnly.disabled = !hasChanges || isNotesEmpty;
+  if (btnInjectLog) btnInjectLog.disabled = !hasChanges || isNotesEmpty;
 }
 
 function populateEditForm(event) {
@@ -1252,7 +1253,7 @@ function populateEditForm(event) {
     event.OptionalAttendees ? event.OptionalAttendees.replace(/;/g, "\n") : ""
   );
   setValue("editReason", event.CancelReason || "");
-  setValue("masterEventId", event.MasterEventID || event.TeamsMeetingID || "");
+  setValue("masterEventId", event.TeamsMeetingID || "");
   setValue("recurrenceInstanceId", event.EventID || "");
   setValue("editSenderEmail", event.LeadEmail || "");
   setValue("editDuration", event.Duration || "");

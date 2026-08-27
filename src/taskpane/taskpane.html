@@ -528,25 +528,7 @@
              EDIT MEETING TAB
              ============================================== -->
         <div id="editMeetingContainer" style="display: none; position: relative">
-          <!-- Cancel Meeting Button -->
-          <button
-            id="btnCancelEdit"
-            class="action-btn secondary"
-            style="
-              position: absolute;
-              top: 0;
-              right: 0;
-              width: auto;
-              padding: 4px 8px;
-              font-size: 12px;
-              display: none;
-              background-color: #a4262c;
-              color: white;
-              border: none;
-            "
-          >
-            Cancel Meeting
-          </button>
+
 
           <div class="form-group section-box" id="idSection">
             <label for="meetingId">Meeting ID / Series ID</label>
@@ -642,11 +624,8 @@
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center">
-                <label for="editEndTime">End Time</label>
-                <button type="button" class="btn-unlock" data-target="editEndTime" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
-              </div>
-              <input type="time" id="editEndTime" disabled />
+              <label for="editEndTime">End Time (Auto-calculated)</label>
+              <input type="time" id="editEndTime" readonly style="background-color: #f3f2f1" />
             </div>
 
             <div class="form-group">
@@ -722,13 +701,13 @@
 
             <div class="form-group">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label for="editReason" style="margin: 0;">Reason (For changes/cancellation)</label>
+                <label for="editReason" style="margin: 0;">Notes *</label>
                 <button type="button" class="btn-unlock" data-target="editReason" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input
                 type="text"
                 id="editReason"
-                placeholder="e.g. Client requested change"
+                placeholder="Required: Notes for edit or cancellation"
                 disabled
               />
             </div>
@@ -750,6 +729,13 @@
               </button>
               <button id="editInjectAndLog" class="action-btn secondary" style="background-color: #315eff; color: white; border: none" disabled>
                 Construct Email & Log SP
+              </button>
+              <button
+                id="btnCancelEdit"
+                class="action-btn secondary"
+                style="display: none; background-color: #a4262c; color: white; border: none"
+              >
+                Cancel Meeting
               </button>
             </div>
           </div>
