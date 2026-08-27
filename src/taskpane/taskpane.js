@@ -918,6 +918,7 @@ async function fetchMeetingDetails() {
       // Copy over fields from List 1 that aren't in List 2 but are needed in UI
       enrichedFields.LeadEmail = logFields.LeadEmail;
       enrichedFields.Duration = logFields.Duration_x0028_minutes_x0029_;
+      enrichedFields.Recurrencepattern = logFields.Recurrencepattern;
       return enrichedFields;
     });
 
@@ -972,11 +973,11 @@ function showRecurrenceSelection() {
   if (allEventsList) {
     allEventsList.innerHTML = ""; // Clear existing
 
-    // Add master series if it exists
+    // Add Master Series option if present
     if (currentFetchedEvents.master) {
       const label = document.createElement("label");
       label.style.display = "block";
-      label.style.marginBottom = "8px";
+      label.style.marginBottom = "6px";
       label.style.fontWeight = "bold";
       label.style.cursor = "pointer";
 
@@ -987,12 +988,33 @@ function showRecurrenceSelection() {
       radio.checked = true; // Default select master
       radio.style.marginRight = "6px";
 
+      const mEvent = currentFetchedEvents.master;
+      let mStart = "Unknown",
+        mEnd = "Unknown",
+        mStartTime = "Unknown",
+        mEndTime = "Unknown";
+
+      if (mEvent.StartTime) {
+        const p = mEvent.StartTime.split("T");
+        mStart = formatDateText(p[0]);
+        mStartTime = p.length > 1 ? formatTimeText(p[1]) : "";
+      }
+
+      const endDateVal = mEvent.RecurrenceEndDate || mEvent.EndTime;
+      if (endDateVal) {
+        const p = endDateVal.split("T");
+        mEnd = formatDateText(p[0]);
+      }
+      if (mEvent.EndTime) {
+        const p = mEvent.EndTime.split("T");
+        mEndTime = p.length > 1 ? formatTimeText(p[1]) : "";
+      }
+
+      const pattern = mEvent.Recurrencepattern ? ` (${mEvent.Recurrencepattern})` : "";
+      const text = `${mStart} - ${mEnd}, ${mStartTime} - ${mEndTime}, ${mEvent.Subject || "Untitled"}${pattern}`;
+
       label.appendChild(radio);
-      label.appendChild(
-        document.createTextNode(
-          `Edit Master Series (Event ID: ${currentFetchedEvents.master.EventID})`
-        )
-      );
+      label.appendChild(document.createTextNode(text));
       allEventsList.appendChild(label);
     }
 
@@ -1011,12 +1033,23 @@ function showRecurrenceSelection() {
         radio.value = event.EventID;
         radio.style.marginRight = "6px";
 
+        let iDate = "Unknown",
+          iStartTime = "Unknown",
+          iEndTime = "Unknown";
+        if (event.StartTime) {
+          const p = event.StartTime.split("T");
+          iDate = formatDateText(p[0]);
+          iStartTime = p.length > 1 ? formatTimeText(p[1]) : "";
+        }
+        if (event.EndTime) {
+          const p = event.EndTime.split("T");
+          iEndTime = p.length > 1 ? formatTimeText(p[1]) : "";
+        }
+
+        const text = `${iDate}, ${iStartTime} - ${iEndTime}, ${event.Subject || "Untitled"}`;
+
         label.appendChild(radio);
-        label.appendChild(
-          document.createTextNode(
-            `${event.StartTime || "Unknown date"} - ${event.Subject} (Event ID: ${event.EventID})`
-          )
-        );
+        label.appendChild(document.createTextNode(text));
         allEventsList.appendChild(label);
       });
     }
