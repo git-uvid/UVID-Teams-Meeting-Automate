@@ -153,6 +153,9 @@ Office.onReady(() => {
   document
     .getElementById("editInjectAndLog")
     ?.addEventListener("click", () => handleSubmission(true, true));
+  document
+    .getElementById("btnCancelEdit")
+    ?.addEventListener("click", () => handleSubmission(true, true, "Cancel Meeting"));
 
   document.getElementById("btnFetchMeeting")?.addEventListener("click", fetchMeetingDetails);
   document
@@ -1137,12 +1140,14 @@ function checkIfEdited() {
   const btnEmailOnly = document.getElementById("editInjectEmailOnly");
   const btnLogSpOnly = document.getElementById("editLogSpOnly");
   const btnInjectLog = document.getElementById("editInjectAndLog");
+  const btnCancelEdit = document.getElementById("btnCancelEdit");
 
   const isNotesEmpty = !currentData.reason.trim();
 
   if (btnEmailOnly) btnEmailOnly.disabled = !hasChanges || isNotesEmpty;
   if (btnLogSpOnly) btnLogSpOnly.disabled = !hasChanges || isNotesEmpty;
   if (btnInjectLog) btnInjectLog.disabled = !hasChanges || isNotesEmpty;
+  if (btnCancelEdit) btnCancelEdit.disabled = isNotesEmpty;
 }
 
 function populateEditForm(event) {
