@@ -576,6 +576,7 @@
             </div>
             <input type="hidden" id="masterEventId" />
             <input type="hidden" id="recurrenceInstanceId" />
+            <input type="hidden" id="trueMasterEventId" />
 
             <div class="form-group">
               <div style="display: flex; justify-content: space-between; align-items: center">
@@ -613,6 +614,14 @@
                 <button type="button" class="btn-unlock" data-target="editDate" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
               </div>
               <input type="date" id="editDate" disabled />
+            </div>
+
+            <div class="form-group" id="editRecurrenceEndDateContainer" style="display: none; border-left: 3px solid #0078d4; padding-left: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <label for="editRecurrenceEndDate">Recurrence End Date</label>
+                <button type="button" class="btn-unlock" data-target="editRecurrenceEndDate" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
+              </div>
+              <input type="date" id="editRecurrenceEndDate" disabled />
             </div>
 
             <div class="form-group">
@@ -700,16 +709,12 @@
             </div>
 
             <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label for="editReason" style="margin: 0;">Notes *</label>
-                <button type="button" class="btn-unlock" data-target="editReason" style="background: none; border: none; cursor: pointer; color: #0078d4; font-size: 14px;">✏️ Edit</button>
-              </div>
-              <input
-                type="text"
+              <label for="editReason">Notes *</label>
+              <textarea
                 id="editReason"
                 placeholder="Required: Notes for edit or cancellation"
-                disabled
-              />
+                style="min-height: 60px;"
+              ></textarea>
             </div>
 
             <div class="form-group">

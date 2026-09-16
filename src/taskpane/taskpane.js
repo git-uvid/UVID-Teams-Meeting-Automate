@@ -235,6 +235,29 @@ function calculateEditEndTime() {
   }
 }
 
+function getCalculatedEndIso(dateStr, timeStr, durationMins) {
+  if (!dateStr || !timeStr || isNaN(durationMins)) return "";
+  const [h, m] = timeStr.split(":").map(Number);
+  const totalMins = h * 60 + m + durationMins;
+  const daysToAdd = Math.floor(totalMins / (24 * 60));
+  const remainingMins = totalMins % (24 * 60);
+  const endH = Math.floor(remainingMins / 60);
+  const endM = remainingMins % 60;
+  
+  const parts = dateStr.split("-").map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  d.setDate(d.getDate() + daysToAdd);
+  
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  
+  const hh = String(endH).padStart(2, "0");
+  const min = String(endM).padStart(2, "0");
+  
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
+}
+
 function handleTabChange() {
   const activeTabEl = document.querySelector('input[name="tabNav"]:checked');
   if (!activeTabEl) return;
@@ -585,16 +608,19 @@ async function logToSharePoint(action, activeTab) {
     // Format start time correctly as ISO string if possible, or just the current string
     let startDateVal = document.getElementById("startDate").value; // YYYY-MM-DD
     let startTimeVal = document.getElementById("startTime").value; // HH:MM
+    let durationMins = parseInt(document.getElementById("duration")?.value) || 0;
+    
     let startIso = "";
     if (startDateVal && startTimeVal) {
       startIso = startDateVal + "T" + startTimeVal + ":00"; // Real SP expects ISO, omitting Z uses site local time
     }
 
-    let endDateVal = document.getElementById("startDate").value; // Assuming same day
-    let endTimeVal = document.getElementById("endTime").value;
-    let endIso = "";
-    if (endDateVal && endTimeVal) {
-      endIso = endDateVal + "T" + endTimeVal + ":00";
+    let endIso = getCalculatedEndIso(startDateVal, startTimeVal, durationMins);
+    if (!endIso && startDateVal) {
+      let endTimeVal = document.getElementById("endTime").value;
+      if (endTimeVal) {
+        endIso = startDateVal + "T" + endTimeVal + ":00";
+      }
     }
 
     let reqEmails =
@@ -665,7 +691,7 @@ async function logToSharePoint(action, activeTab) {
     // The inputs are date type and time type. If both exist, combine them.
     const editDate = getValue("editDate");
     const editTime = getValue("editTime");
-    const editEndTime = getValue("editEndTime");
+    const editDurationMins = parseInt(getValue("editDuration")) || 0;
 
     let bodyContent = getValue("editMeetingEventMessage");
     if (typeof editEditor !== "undefined" && editEditor) {
@@ -679,26 +705,30 @@ async function logToSharePoint(action, activeTab) {
       payload.fields.StartTime = "";
     }
 
-    if (editDate && editEndTime) {
-      // Assuming same day end time for simplicity in UI, if it crosses midnight it would be an issue but UI lacks end date
-      payload.fields.EndTime = editDate + "T" + editEndTime + ":00";
+    const calculatedEndIso = getCalculatedEndIso(editDate, editTime, editDurationMins);
+    if (calculatedEndIso) {
+      payload.fields.EndTime = calculatedEndIso;
     } else {
-      payload.fields.EndTime = "";
+      const editEndTime = getValue("editEndTime");
+      payload.fields.EndTime = editDate && editEndTime ? editDate + "T" + editEndTime + ":00" : "";
     }
-
+    
+    payload.fields.RecurrenceEnd = getValue("editRecurrenceEndDate") ? getValue("editRecurrenceEndDate") + "T00:00:00" : "";
     payload.fields.Notes = getValue("editReason");
 
     // Grab meeting ID and event ID
     payload.fields.MeetingID = getValue("masterEventId");
     payload.fields.EventID = getValue("recurrenceInstanceId");
 
-    // Determine TypeOfEvent based on selection
+    // Determine TypeOfEvent and Recurrence based on selection
     let typeOfEvent = "";
+    let isRecurrence = "No";
     if (document.getElementById("recurrenceSelectionContainer")?.style.display === "block") {
       const selectedRadio = document.querySelector('input[name="eventSelection"]:checked');
       if (selectedRadio) {
         if (selectedRadio.value === "MASTER") {
           typeOfEvent = "Master Series ID";
+          isRecurrence = "Yes";
         } else {
           typeOfEvent = "Single Event ID";
         }
@@ -707,7 +737,15 @@ async function logToSharePoint(action, activeTab) {
       // If it's a one-off meeting (no recurrence selection container), it's a single event
       typeOfEvent = "Single Event ID";
     }
+
+    const actualMasterEventId = getValue("trueMasterEventId");
+    const currentEventId = getValue("recurrenceInstanceId");
+    if (actualMasterEventId && currentEventId && actualMasterEventId !== currentEventId) {
+      isRecurrence = "Yes";
+    }
+
     payload.fields.TypeOfEvent = typeOfEvent;
+    payload.fields.Recurrence = isRecurrence;
     
     // Silently add the user who triggered the action
     payload.fields.TriggeredBy = userEmail;
@@ -1127,6 +1165,7 @@ function checkIfEdited() {
     reqAttendees: getVal("editRequiredAttendees"),
     optAttendees: getVal("editOptionalAttendees"),
     reason: getVal("editReason"),
+    recurrenceEndDate: getVal("editRecurrenceEndDate"),
   };
 
   let hasChanges = false;
@@ -1204,13 +1243,13 @@ function populateEditForm(event) {
     "editRequiredAttendees",
     "editOptionalAttendees",
     "editReason",
+    "editRecurrenceEndDate",
   ];
   inputsToCheck.forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener("input", checkIfEdited);
       el.addEventListener("change", checkIfEdited);
-      el.disabled = true; // Start locked
     }
   });
 
@@ -1260,8 +1299,16 @@ function populateEditForm(event) {
   setValue("editReason", event.CancelReason || "");
   setValue("masterEventId", event.TeamsMeetingID || "");
   setValue("recurrenceInstanceId", event.EventID || "");
+  setValue("trueMasterEventId", event.MasterEventID || "");
   setValue("editSenderEmail", event.LeadEmail || "");
   setValue("editDuration", event.Duration || "");
+
+  const rEnd = event.RecurrenceEndDate || event.Recurrenceenddate || event.RecurrenceEnd || "";
+  if (rEnd) {
+    setValue("editRecurrenceEndDate", rEnd.split("T")[0]);
+  } else {
+    setValue("editRecurrenceEndDate", "");
+  }
 
   // Lock all inputs initially
   const inputsToLock = [
@@ -1274,7 +1321,7 @@ function populateEditForm(event) {
     "editSenderEmail",
     "editRequiredAttendees",
     "editOptionalAttendees",
-    "editReason",
+    "editRecurrenceEndDate",
   ];
   inputsToLock.forEach((id) => {
     const el = document.getElementById(id);
@@ -1286,6 +1333,30 @@ function populateEditForm(event) {
 
   const overlay = document.getElementById("edit-editor-overlay");
   if (overlay) overlay.style.display = "block";
+
+  // Handle Master Series ID locking logic
+  const isMasterSelection =
+    document.getElementById("recurrenceSelectionContainer")?.style.display === "block" &&
+    document.querySelector('input[name="eventSelection"]:checked')?.value === "MASTER";
+
+  const editRecurrenceEndDateContainer = document.getElementById("editRecurrenceEndDateContainer");
+
+  if (isMasterSelection) {
+    document.querySelectorAll(".btn-unlock, .btn-unlock-editor").forEach((btn) => {
+      const target = btn.getAttribute("data-target");
+      if (target === "editRecurrenceEndDate") {
+        btn.style.display = "block";
+      } else {
+        btn.style.display = "none";
+      }
+    });
+    if (editRecurrenceEndDateContainer) editRecurrenceEndDateContainer.style.display = "block";
+  } else {
+    document.querySelectorAll(".btn-unlock, .btn-unlock-editor").forEach((btn) => {
+      btn.style.display = "block";
+    });
+    if (editRecurrenceEndDateContainer) editRecurrenceEndDateContainer.style.display = "none";
+  }
 
   // Store initial state
   const getVal = (id) => document.getElementById(id)?.value || "";
@@ -1301,6 +1372,7 @@ function populateEditForm(event) {
     reqAttendees: getVal("editRequiredAttendees"),
     optAttendees: getVal("editOptionalAttendees"),
     reason: getVal("editReason"),
+    recurrenceEndDate: getVal("editRecurrenceEndDate"),
   };
 
   checkIfEdited();
