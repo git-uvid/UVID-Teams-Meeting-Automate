@@ -534,7 +534,8 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
         { coercionType: Office.CoercionType.Html },
         async (asyncResult) => {
           if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-            statusEl.innerText = "Error injecting content: " + asyncResult.error.message;
+            const ts = new Date().toLocaleTimeString();
+            statusEl.innerText = `Error injecting content: ${asyncResult.error.message} (${ts})`;
             statusEl.style.color = "red";
             return;
           }
@@ -548,7 +549,8 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
               "Email populated, but failed to log to SharePoint."
             );
           } else {
-            statusEl.innerText = "Success! Email constructed.";
+            const ts = new Date().toLocaleTimeString();
+            statusEl.innerText = `Success! Email constructed. (${ts})`;
             statusEl.style.color = "green";
           }
         }
@@ -576,7 +578,8 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
         "Testing outside Outlook. SP Log failed."
       );
     } else {
-      statusEl.innerText = "Testing outside Outlook. Email generated in console.";
+      const ts = new Date().toLocaleTimeString();
+      statusEl.innerText = `Testing outside Outlook. Email generated in console. (${ts})`;
       statusEl.style.color = "orange";
     }
   }
@@ -587,11 +590,13 @@ async function executeSPLog(action, activeTab, statusEl, successMsg, failMsg) {
   statusEl.style.color = "blue";
   try {
     await logToSharePoint(action, activeTab);
-    statusEl.innerText = successMsg;
+    const ts = new Date().toLocaleTimeString();
+    statusEl.innerText = `${successMsg} (${ts})`;
     statusEl.style.color = "green";
   } catch (err) {
     console.error(err);
-    statusEl.innerText = failMsg;
+    const ts = new Date().toLocaleTimeString();
+    statusEl.innerText = `${failMsg} (${ts})`;
     statusEl.style.color = "red";
   }
 }
