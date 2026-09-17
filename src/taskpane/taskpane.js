@@ -403,9 +403,51 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
     action = overrideAction || "Change Details";
   }
 
+  if (action === "Cancel Meeting" || action === "Cancel Series" || action === "Cancel Series Event") {
+    const confirmed = window.confirm(`Are you sure you want to ${action}? This action will log a cancellation and cannot be undone.`);
+    if (!confirmed) return;
+  }
+
+  const buttons = activeTab === "newMeeting" 
+      ? document.querySelectorAll("#newMeetingContainer .button-group button")
+      : document.querySelectorAll("#editMeetingContainer .button-group button");
+  
+  const restoreButtons = () => {
+    buttons.forEach(btn => {
+      if (btn.dataset.originalText) {
+        btn.innerText = btn.dataset.originalText;
+      }
+      btn.disabled = false;
+    });
+  };
+
+  buttons.forEach(btn => {
+      if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerText;
+      btn.innerText = "Processing...";
+      btn.disabled = true;
+  });
+
   const statusEl = document.getElementById("statusMessage");
-  statusEl.innerText = "Constructing Email...";
+  statusEl.innerText = "Processing Request...";
   statusEl.style.color = "blue";
+  
+  const finalize = (success) => {
+    restoreButtons();
+    if (success && typeof resetForm === "function") {
+      if (activeTab === "newMeeting") {
+         resetForm("newMeetingForm");
+         if (typeof newEditor !== "undefined" && newEditor) newEditor.root.innerHTML = "";
+      } else {
+         resetForm("editMeetingForm");
+         if (typeof editEditor !== "undefined" && editEditor) editEditor.root.innerHTML = "";
+      }
+    }
+    setTimeout(() => { 
+      if (statusEl && statusEl.innerText.includes("Success")) {
+        statusEl.innerText = ""; 
+      }
+    }, 7000);
+  };
 
   // Format the email body based on action
   let emailBody = "";
@@ -537,32 +579,39 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
             const ts = new Date().toLocaleTimeString();
             statusEl.innerText = `Error injecting content: ${asyncResult.error.message} (${ts})`;
             statusEl.style.color = "red";
+            finalize(false);
             return;
           }
 
           if (doSP) {
-            await executeSPLog(
+            const spSuccess = await executeSPLog(
               action,
               activeTab,
               statusEl,
               "Success! Email populated and logged to SharePoint.",
               "Email populated, but failed to log to SharePoint."
             );
+            finalize(spSuccess);
           } else {
             const ts = new Date().toLocaleTimeString();
             statusEl.innerText = `Success! Email constructed. (${ts})`;
             statusEl.style.color = "green";
+            finalize(true);
           }
         }
       );
     } else if (doSP) {
-      await executeSPLog(
+      const spSuccess = await executeSPLog(
         action,
         activeTab,
         statusEl,
         "Success! Logged to SharePoint.",
         "Failed to log to SharePoint."
       );
+      finalize(spSuccess);
+    } else {
+      // should never hit this normally, but just in case
+      finalize(true);
     }
   } else {
     // If testing in browser without Office.js
@@ -570,17 +619,19 @@ async function handleSubmission(doEmail, doSP, overrideAction = null) {
     console.log("Body:", emailBody);
 
     if (doSP) {
-      await executeSPLog(
+      const spSuccess = await executeSPLog(
         action,
         activeTab,
         statusEl,
         "Testing outside Outlook. Logged to SharePoint.",
         "Testing outside Outlook. SP Log failed."
       );
+      finalize(spSuccess);
     } else {
       const ts = new Date().toLocaleTimeString();
       statusEl.innerText = `Testing outside Outlook. Email generated in console. (${ts})`;
       statusEl.style.color = "orange";
+      finalize(true);
     }
   }
 }
@@ -593,11 +644,13 @@ async function executeSPLog(action, activeTab, statusEl, successMsg, failMsg) {
     const ts = new Date().toLocaleTimeString();
     statusEl.innerText = `${successMsg} (${ts})`;
     statusEl.style.color = "green";
+    return true;
   } catch (err) {
     console.error(err);
     const ts = new Date().toLocaleTimeString();
     statusEl.innerText = `${failMsg} (${ts})`;
     statusEl.style.color = "red";
+    return false;
   }
 }
 
